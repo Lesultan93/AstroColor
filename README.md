@@ -28,3 +28,16 @@ It exports several functions:
 - `rgbToHsl(r, g, b)` – converts numeric RGB values to an object of hue, saturation and lightness.
 - `lightenColor(hex, percent)` – lightens a hex color by the given percentage.
 - `darkenColor(hex, percent)` – darkens a hex color by the given percentage.
+
+## Running the React application
+
+The file `remixed-ab645940.tsx` provides a simple React interface for
+AstroColor. After installing dependencies you can start it with:
+
+```bash
+npm start
+```
+
+Within the app you can generate color palettes, export them to CSS, JSON,
+SCSS, SVG, PNG or PDF formats and consult the history of your last
+palettes.
