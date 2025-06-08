@@ -18,4 +18,23 @@ describe('colorUtils', () => {
     expect(rgbToHsl(0, 255, 0)).toEqual({ h: 120, s: 100, l: 50 });
     expect(rgbToHsl(0, 0, 255)).toEqual({ h: 240, s: 100, l: 50 });
   });
+  test("hexToRgb returns null for invalid hex", () => {
+    expect(hexToRgb("#gggggg")).toBeNull();
+    expect(hexToRgb("invalid")).toBeNull();
+  });
+
+  test("hexToRgb and rgbToHex are inverse operations", () => {
+    const colors = ["#123456", "#abcdef", "#000000", "#ffffff"];
+    colors.forEach(hex => {
+      const rgb = hexToRgb(hex);
+      expect(rgbToHex(rgb.r, rgb.g, rgb.b)).toBe(hex.toLowerCase());
+    });
+  });
+
+  test("rgbToHsl handles grayscale", () => {
+    expect(rgbToHsl(0, 0, 0)).toEqual({ h: 0, s: 0, l: 0 });
+    expect(rgbToHsl(255, 255, 255)).toEqual({ h: 0, s: 0, l: 100 });
+  });
+
 });
+
