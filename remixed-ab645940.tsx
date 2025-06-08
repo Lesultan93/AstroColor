@@ -109,7 +109,24 @@ export default function AstroColor() {
   const [copiedColor, setCopiedColor] = useState(null);
   const [history, setHistory] = useState([]);
   const [colorDescription, setColorDescription] = useState('');
-  const [showContrastMatrix, setShowContrastMatrix] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  useEffect(() => {
+    const stored = localStorage.getItem('astrocolorHistory');
+    if (stored) {
+      try {
+        setHistory(JSON.parse(stored));
+      } catch (e) {
+        // ignore parsing errors
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (history.length > 0) {
+      localStorage.setItem('astrocolorHistory', JSON.stringify(history));
+    }
+  }, [history]);
 
   // Générer la palette
   const generatePalette = useCallback(() => {
@@ -190,15 +207,14 @@ export default function AstroColor() {
   const handleColorChange = (e) => {
     const value = e.target.value;
     setColorInput(value);
-    
-    if (value.startsWith('#') && value.length === 7) {
-      setBaseColor(value);
+
+    const parsed = colorUtils.parseColor(value);
+    if (parsed) {
+      setBaseColor(parsed);
+      setColorInput(parsed);
+      setErrorMessage('');
     } else {
-      const parsed = colorUtils.parseColor(value);
-      if (parsed) {
-        setBaseColor(parsed);
-        setColorInput(parsed);
-      }
+      setErrorMessage('Format de couleur invalide');
     }
   };
 
@@ -484,9 +500,13 @@ startxref
                     onChange={(e) => {
                       setBaseColor(e.target.value);
                       setColorInput(e.target.value);
+                      setErrorMessage('');
                     }}
                     className="w-full h-10 rounded cursor-pointer"
                   />
+                  {errorMessage && (
+                    <p className="text-sm text-red-500">{errorMessage}</p>
+                  )}
                   {colorDescription && (
                     <p className="text-sm text-gray-500 italic">
                       {colorDescription}

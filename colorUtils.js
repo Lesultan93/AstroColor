@@ -83,8 +83,37 @@ function hslToRgb(h, s, l) {
 function parseColor(input) {
   input = input.trim().toLowerCase();
 
+  const namedColors = {
+    red: '#ff0000',
+    green: '#008000',
+    blue: '#0000ff',
+    black: '#000000',
+    white: '#ffffff',
+    yellow: '#ffff00',
+    cyan: '#00ffff',
+    magenta: '#ff00ff'
+  };
+
+  if (namedColors[input]) {
+    return namedColors[input];
+  }
+
   if (input.startsWith('#')) {
-    return input;
+    if (/^#[0-9a-f]{3}$/i.test(input)) {
+      return (
+        '#' +
+        input[1] +
+        input[1] +
+        input[2] +
+        input[2] +
+        input[3] +
+        input[3]
+      );
+    }
+    if (/^#[0-9a-f]{6}$/i.test(input)) {
+      return input;
+    }
+    return null;
   }
 
   const rgbMatch = input.match(/rgb\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/);
