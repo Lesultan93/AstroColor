@@ -21,8 +21,10 @@ npm test
 ## colorUtils.js
 
 `colorUtils.js` contains helpers for converting colors between formats.
-It exports three functions:
+It exports several functions:
 
 - `hexToRgb(hex)` – converts a hex color string like `#ff0000` to an object of red, green and blue values.
 - `rgbToHex(r, g, b)` – converts numeric RGB values to a hex color string.
 - `rgbToHsl(r, g, b)` – converts numeric RGB values to an object of hue, saturation and lightness.
+- `lightenColor(hex, percent)` – lightens a hex color by the given percentage.
+- `darkenColor(hex, percent)` – darkens a hex color by the given percentage.

@@ -178,6 +178,24 @@ function getColorDescription(hsl) {
   return `${hue} ${saturation}, ${lightness}`;
 }
 
+function lightenColor(hex, percent) {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return null;
+  const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
+  hsl.l = Math.min(100, hsl.l + percent);
+  const lighter = hslToRgb(hsl.h, hsl.s, hsl.l);
+  return rgbToHex(lighter.r, lighter.g, lighter.b);
+}
+
+function darkenColor(hex, percent) {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return null;
+  const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
+  hsl.l = Math.max(0, hsl.l - percent);
+  const darker = hslToRgb(hsl.h, hsl.s, hsl.l);
+  return rgbToHex(darker.r, darker.g, darker.b);
+}
+
 module.exports = {
   hexToRgb,
   rgbToHex,
@@ -187,5 +205,7 @@ module.exports = {
   getContrast,
   getContrastRatio,
   getWCAGLevel,
-  getColorDescription
+  getColorDescription,
+  lightenColor,
+  darkenColor
 };
