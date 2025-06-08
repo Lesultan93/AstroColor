@@ -475,18 +475,33 @@ export default function AstroColor() {
         const ctx = canvas.getContext('2d');
         canvas.width = 800;
         canvas.height = 200;
-        
+
+        // Fonction utilitaire pour dessiner un rectangle arrondi
+        const drawRoundedRect = (context, x, y, width, height, radius) => {
+          context.beginPath();
+          context.moveTo(x + radius, y);
+          context.lineTo(x + width - radius, y);
+          context.arc(x + width - radius, y + radius, radius, -Math.PI / 2, 0);
+          context.lineTo(x + width, y + height - radius);
+          context.arc(x + width - radius, y + height - radius, radius, 0, Math.PI / 2);
+          context.lineTo(x + radius, y + height);
+          context.arc(x + radius, y + height - radius, radius, Math.PI / 2, Math.PI);
+          context.lineTo(x, y + radius);
+          context.arc(x + radius, y + radius, radius, Math.PI, Math.PI * 1.5);
+          context.closePath();
+          context.fill();
+        };
+
         // Fond
         ctx.fillStyle = darkMode ? '#1f2937' : '#ffffff';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
+
         // Couleurs
         const colorWidth = canvas.width / palette.length;
         palette.forEach((color, i) => {
           ctx.fillStyle = color.hex;
-          ctx.roundRect(i * colorWidth + 5, 20, colorWidth - 10, 120, 8);
-          ctx.fill();
-          
+          drawRoundedRect(ctx, i * colorWidth + 5, 20, colorWidth - 10, 120, 8);
+
           ctx.fillStyle = darkMode ? '#ffffff' : '#000000';
           ctx.font = '14px monospace';
           ctx.textAlign = 'center';
