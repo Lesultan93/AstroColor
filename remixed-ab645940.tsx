@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Copy, Download, Sun, Moon, Settings, Info, Share2, Eye, FileText, Image, Code } from 'lucide-react';
+import { Copy, Sun, Moon, Settings, Eye, FileText, Image, Code } from 'lucide-react';
 
 // Icône Astronaute personnalisée
 const AstronautIcon = ({ className }) => (
