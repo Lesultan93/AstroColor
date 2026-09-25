@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Teaser The Extra Mile</title>
+<!--
+  Teaser — Semaine du Service à la Clientèle 2026 | The Extra Mile
+  AFG Bank Gabon · 9:16 · 1080 × 1920 · ~46,5 s
+  Rendu déterministe : window.renderAt(t) dessine l'image exacte à l'instant t (secondes).
+  Lecture : ouvrir ce fichier dans un navigateur. Export vidéo : node render.mjs
+  Logos : fichiers officiels du Design System AFG, jamais redessinés.
+-->
+<style>
+  @font-face { font-family: "Mark Pro"; src: url("assets/fonts/MarkPro-Regular.ttf") format("truetype"); font-weight: 400; }
+  @font-face { font-family: "Mark Pro"; src: url("assets/fonts/MarkPro-Medium.ttf") format("truetype"); font-weight: 500; }
+  @font-face { font-family: "Mark Pro"; src: url("assets/fonts/MarkPro-Heavy.ttf") format("truetype"); font-weight: 900; }
+
+  :root {
+    /* Tokens Design System AFG Bank Gabon */
+    --afg-blue: #001051;
+    --afg-dark-blue: #000A31;
+    --afg-light-blue: #667097;
+    --afg-green: #00AD00;
+    --afg-light-grey-1: #B3B3B3;
+    --white: #FFFFFF;
+    --font-sans: "Mark Pro", Arial, sans-serif;
+    --gutter: 96px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: #05070f; color: var(--white); font-family: var(--font-sans); height: 100%; }
+  body { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; overflow: hidden; }
+
+  #viewport { position: relative; width: 1080px; height: 1920px; transform-origin: top left; }
+  #stage { position: absolute; inset: 0; width: 1080px; height: 1920px; overflow: hidden; background: var(--afg-blue); }
+  #stage * { will-change: transform, opacity; }
+  .abs { position: absolute; }
+
+  /* Fond : atmosphère lente, jamais une distraction */
+  #bg-glow { inset: -20%; background: radial-gradient(ellipse 60% 38% at 50% 30%, rgba(102,112,151,0.22), rgba(102,112,151,0) 70%); }
+  #bg-horizon { inset: 0; background: radial-gradient(ellipse 90% 34% at 50% 108%, rgba(0,173,0,0.16), rgba(0,173,0,0) 70%); opacity: 0; }
+  #bg-vignette { inset: 0; background: radial-gradient(ellipse 85% 70% at 50% 45%, rgba(0,10,49,0) 55%, rgba(0,10,49,0.85) 100%); }
+  #fade-black { inset: 0; background: #000A31; }
+
+  #logo { left: var(--gutter); top: 150px; width: 300px; }
+  #hourglass { left: 0; top: 0; width: 240px; height: 360px; transform-origin: 0 0; }
+  .icon { left: var(--gutter); top: 660px; width: 420px; height: 420px; overflow: visible; }
+
+  .msg { left: var(--gutter); top: 1180px; width: 888px; font-weight: 500; font-size: 96px; line-height: 1.08; letter-spacing: -0.01em; text-align: left; }
+  .msg em { font-style: normal; color: var(--afg-green); }
+
+  #rule { left: var(--gutter); top: 1119px; height: 2px; width: 888px; background: rgba(255,255,255,0.55); transform-origin: 0 50%; }
+  .digit { left: 0; top: 0; width: 1080px; height: 1920px; display: flex; align-items: center; justify-content: center; font-weight: 400; font-size: 520px; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .digit.zero { color: var(--afg-green); }
+
+  #badge { left: 80px; top: 380px; width: 640px; transform-origin: 50% 50%; }
+  #kicker { left: var(--gutter); top: 1090px; font-weight: 500; font-size: 36px; line-height: 44px; letter-spacing: 0.12em; color: var(--afg-light-grey-1); }
+  #title { left: var(--gutter); top: 1144px; width: 888px; font-weight: 900; font-size: 104px; line-height: 104px; letter-spacing: -0.01em; }
+  #signature { left: var(--gutter); top: 1396px; width: 888px; font-weight: 400; font-size: 56px; line-height: 66px; }
+  #date { left: var(--gutter); top: 1562px; font-weight: 500; font-size: 48px; line-height: 56px; color: var(--afg-green); }
+
+  svg .st { fill: none; stroke: var(--white); stroke-width: 10; stroke-linecap: round; stroke-linejoin: round; }
+  svg .st.g { stroke: var(--afg-green); }
+
+  /* Contrôles de revue (masqués en export) */
+  #controls { display: flex; gap: 12px; align-items: center; font: 14px/1 Arial, sans-serif; color: #cfd3e6; }
+  #controls button { font: inherit; padding: 8px 14px; background: #1b2a66; color: #fff; border: 1px solid #667097; border-radius: 4px; cursor: pointer; }
+  #controls input[type=range] { width: min(60vw, 480px); }
+  body.capture { display: block; background: var(--afg-blue); }
+  body.capture #controls { display: none; }
+</style>
+</head>
+<body>
+<div id="viewport">
+<div id="stage">
+  <div id="bg-glow" class="abs"></div>
+  <div id="bg-horizon" class="abs"></div>
+  <div id="bg-vignette" class="abs"></div>
+
+  <img id="logo" class="abs" src="assets/logos/afg-bank-logo-couleur.png" alt="AFG Bank — Atlantic Group">
+
+  <!-- 01–02 · Sablier : temps accordé, attention, importance de chaque interaction -->
+  <svg id="hourglass" class="abs" viewBox="0 0 200 300" aria-hidden="true">
+    <defs>
+      <clipPath id="hg-top"><path d="M58 28 C58 92 95 116 96 150 L104 150 C105 116 142 92 142 28 Z"/></clipPath>
+      <clipPath id="hg-bot"><path d="M96 150 C95 184 58 208 58 272 L142 272 C142 208 105 184 104 150 Z"/></clipPath>
+    </defs>
+    <rect id="sand-top" x="40" y="70" width="120" height="80" fill="#00AD00" clip-path="url(#hg-top)"/>
+    <rect id="sand-bot" x="40" y="272" width="120" height="0" fill="#00AD00" clip-path="url(#hg-bot)"/>
+    <line id="sand-stream" x1="100" y1="148" x2="100" y2="272" stroke="#00AD00" stroke-width="3" stroke-linecap="round"/>
+    <path class="st" d="M50 20 C50 96 92 118 92 150 C92 182 50 204 50 280"/>
+    <path class="st" d="M150 20 C150 96 108 118 108 150 C108 182 150 204 150 280"/>
+    <line class="st" x1="30" y1="18" x2="170" y2="18"/>
+    <line class="st" x1="30" y1="282" x2="170" y2="282"/>
+  </svg>
+
+  <!-- 03 · Écouter : oreille + ondes -->
+  <svg id="ic-listen" class="abs icon" viewBox="0 0 200 200" aria-hidden="true">
+    <path class="st draw" pathLength="1" d="M58 150 C60 178 96 182 104 160 C110 143 136 128 136 92 C136 56 110 30 80 30 C48 30 26 56 26 88"/>
+    <path class="st draw" pathLength="1" d="M52 92 C52 70 64 56 82 56 C100 56 110 72 108 90 C106 104 90 108 88 124 C86 136 72 138 70 126"/>
+    <path class="st g draw" pathLength="1" d="M156 72 C166 84 166 108 156 120"/>
+    <path class="st g draw" pathLength="1" d="M176 54 C194 76 194 116 176 138"/>
+  </svg>
+
+  <!-- 04 · Comprendre : deux cercles qui se rejoignent, point commun mis en évidence -->
+  <svg id="ic-understand" class="abs icon" viewBox="0 0 200 200" aria-hidden="true">
+    <defs><clipPath id="clip-b"><circle id="clip-b-c" cx="130" cy="100" r="54"/></clipPath></defs>
+    <circle id="venn-fill" cx="70" cy="100" r="54" fill="#00AD00" clip-path="url(#clip-b)" opacity="0"/>
+    <circle id="venn-a" class="st" cx="70" cy="100" r="54"/>
+    <circle id="venn-b" class="st" cx="130" cy="100" r="54"/>
+  </svg>
+
+  <!-- 05 · Accompagner : deux personnes qui se rapprochent, un chemin partagé -->
+  <svg id="ic-support" class="abs icon" viewBox="0 0 200 200" aria-hidden="true">
+    <g id="p1"><circle class="st" cx="72" cy="70" r="20"/><path class="st" d="M36 146 C36 112 108 112 108 146"/></g>
+    <g id="p2"><circle class="st g" cx="128" cy="70" r="20"/><path class="st g" d="M92 146 C92 112 164 112 164 146"/></g>
+    <path id="ground" class="st draw" pathLength="1" d="M28 172 L172 172"/>
+  </svg>
+
+  <!-- 06 · Aller plus loin : trajectoire qui avance -->
+  <svg id="ic-further" class="abs icon" viewBox="0 0 200 200" aria-hidden="true">
+    <path id="route" class="st draw" pathLength="1" d="M24 182 C24 130 110 150 110 100 C110 58 70 56 96 34 C112 20 140 24 168 24"/>
+    <path id="arrow" class="st g" d="M150 8 L170 24 L150 40"/>
+    <circle id="traveller" r="9" fill="#00AD00" cx="24" cy="182"/>
+  </svg>
+
+  <div id="m1" class="abs msg">Il suffit parfois<br>d’un <em>effort</em>…</div>
+  <div id="m2" class="abs msg">L’effort de faire<br><em>toujours mieux.</em></div>
+  <div id="m3" class="abs msg">L’effort<br>d’<em>écouter.</em></div>
+  <div id="m4" class="abs msg">L’effort<br>de <em>comprendre.</em></div>
+  <div id="m5" class="abs msg">L’effort<br>d’<em>accompagner.</em></div>
+  <div id="m6" class="abs msg">L’effort<br>d’aller <em>plus loin.</em></div>
+
+  <div id="rule" class="abs"></div>
+
+  <div id="d5" class="abs digit">05</div>
+  <div id="d4" class="abs digit">04</div>
+  <div id="d3" class="abs digit">03</div>
+  <div id="d2" class="abs digit">02</div>
+  <div id="d1" class="abs digit">01</div>
+  <div id="d0" class="abs digit zero">00</div>
+
+  <img id="badge" class="abs" src="assets/logos/csw-2026-the-extra-mile-badge.png" alt="Customer Service Week 2026 — The Extra Mile">
+  <div id="kicker" class="abs">SEMAINE DU</div>
+  <div id="title" class="abs">SERVICE À LA CLIENTÈLE</div>
+  <div id="signature" class="abs">Faire un effort de plus<br>pour nos clients</div>
+  <div id="date" class="abs">5 — 9 octobre 2026</div>
+
+  <div id="fade-black" class="abs"></div>
+</div>
+</div>
+
+<div id="controls">
+  <button id="play">Lecture</button>
+  <button id="restart">Rejouer</button>
+  <input id="scrub" type="range" min="0" max="46.5" step="0.01" value="0">
+  <span id="clock">00,00 s</span>
+</div>
+
+<script>
+(() => {
+  const DURATION = 46.5;
+
+  // Courbes du Design System AFG
+  function bezier(x1, y1, x2, y2) {
+    const cx = 3 * x1, bx = 3 * (x2 - x1) - cx, ax = 1 - cx - bx;
+    const cy = 3 * y1, by = 3 * (y2 - y1) - cy, ay = 1 - cy - by;
+    const sx = t => ((ax * t + bx) * t + cx) * t;
+    const sy = t => ((ay * t + by) * t + cy) * t;
+    const dx = t => (3 * ax * t + 2 * bx) * t + cx;
+    return x => {
+      if (x <= 0) return 0; if (x >= 1) return 1;
+      let t = x;
+      for (let i = 0; i < 8; i++) { const e = sx(t) - x; const d = dx(t); if (Math.abs(e) < 1e-6 || !d) break; t -= e / d; }
+      return sy(Math.min(1, Math.max(0, t)));
+    };
+  }
+  const easeOut = bezier(0.23, 1, 0.32, 1);
+  const easeInOut = bezier(0.77, 0, 0.175, 1);
+  const linear = x => Math.min(1, Math.max(0, x));
+  const prog = (t, a, b, ease = linear) => ease(linear((t - a) / (b - a)));
+  const mix = (a, b, p) => a + (b - a) * p;
+
+  const $ = id => document.getElementById(id);
+  const set = (el, o, tf) => { el.style.opacity = o; el.style.transform = tf || ''; el.style.visibility = o <= 0.001 ? 'hidden' : 'visible'; };
+
+  // Entrée 400 ms ease-out (y +24 → 0), sortie 300 ms (y 0 → −12)
+  function enterExit(el, t, tin, tout, dy = 24) {
+    const pin = prog(t, tin, tin + 0.4, easeOut);
+    const pout = prog(t, tout, tout + 0.3, easeOut);
+    set(el, pin * (1 - pout), `translateY(${(1 - pin) * dy - pout * 12}px)`);
+  }
+  function draw(path, p) { path.style.strokeDasharray = '1 1'; path.style.strokeDashoffset = 1 - p; path.style.opacity = p > 0.001 ? 1 : 0; }
+
+  const el = {};
+  ['fade-black','bg-glow','bg-horizon','logo','hourglass','sand-top','sand-bot','sand-stream',
+   'ic-listen','ic-understand','ic-support','ic-further','venn-a','venn-b','venn-fill','clip-b-c',
+   'p1','p2','ground','route','arrow','traveller','rule','badge','kicker','title','signature','date',
+   'm1','m2','m3','m4','m5','m6','d5','d4','d3','d2','d1','d0'].forEach(id => el[id] = $(id));
+  const listenPaths = el['ic-listen'].querySelectorAll('.draw');
+  const routeLen = el.route.getTotalLength();
+
+  // Positions du sablier : zone icône → coin supérieur droit, centré sur l'axe du logo
+  const HG_W = 240, HG_H = 360, HG_END_SCALE = 0.35;
+  const HG_START = { x: 96, y: 700 };
+  const LOGO_CY = 150 + 300 * (1482 / 3403) / 2;
+  const HG_END = { x: 1080 - 96 - HG_W * HG_END_SCALE, y: LOGO_CY - HG_H * HG_END_SCALE / 2 };
+
+  function renderAt(t) {
+    // ---- Fond : ouverture depuis le noir, lueur qui dérive lentement, horizon vert à partir de la scène 06
+    el['fade-black'].style.opacity = 1 - prog(t, 0, 0.9, easeOut);
+    el['bg-glow'].style.transform = `translate(${mix(-40, 40, prog(t, 0, DURATION))}px, ${mix(0, 60, prog(t, 0, DURATION))}px)`;
+    el['bg-horizon'].style.opacity = prog(t, 25.4, 33.5) * (1 - 0.35 * prog(t, 34.2, 36.5)) ;
+
+    // ---- Logo AFG : fondu discret en scène 01, retiré pendant le compte à rebours, retour sur l'end card
+    const logoIn = prog(t, 2.8, 3.4, easeOut) * (1 - prog(t, 34.1, 34.5, easeOut));
+    const logoEnd = prog(t, 42.0, 42.5, easeOut);
+    set(el.logo, Math.max(logoIn, logoEnd));
+
+    // ---- Sablier
+    const hgIn = prog(t, 0.8, 1.3, easeOut);
+    const hgMove = prog(t, 6.4, 7.1, easeInOut);
+    const hgOut = prog(t, 34.1, 34.5, easeOut);
+    const sx = mix(HG_START.x, HG_END.x, hgMove), sy = mix(HG_START.y, HG_END.y, hgMove) + (1 - hgIn) * 30;
+    const sc = mix(1, HG_END_SCALE, hgMove);
+    set(el.hourglass, hgIn * (1 - hgOut), `translate(${sx}px, ${sy}px) scale(${sc})`);
+    // Sable : écoulement continu, linéaire, qui s'achève juste avant le compte à rebours
+    const sand = prog(t, 1.3, 34.0);
+    const topY = mix(70, 150, sand);
+    el['sand-top'].setAttribute('y', topY); el['sand-top'].setAttribute('height', Math.max(0, 150 - topY));
+    const pile = mix(0, 78, sand);
+    el['sand-bot'].setAttribute('y', 272 - pile); el['sand-bot'].setAttribute('height', pile);
+    el['sand-stream'].setAttribute('y2', 272 - pile);
+    el['sand-stream'].style.opacity = (sand > 0 && sand < 1) ? 1 : 0;
+
+    // ---- Messages (un seul à la fois)
+    enterExit(el.m1, t, 1.8, 4.4);
+    enterExit(el.m2, t, 4.9, 9.2);
+    enterExit(el.m3, t, 10.5, 14.3);
+    enterExit(el.m4, t, 15.4, 19.5);
+    enterExit(el.m5, t, 20.6, 24.9);
+    enterExit(el.m6, t, 26.0, 30.4);
+
+    // ---- 03 Écouter : tracé progressif 600 ms, ondes ensuite, maintien
+    const lOut = prog(t, 14.3, 14.6, easeOut);
+    set(el['ic-listen'], (t >= 9.7 ? 1 : 0) * (1 - lOut), `translateY(${-lOut * 12}px)`);
+    draw(listenPaths[0], prog(t, 9.7, 10.3, easeInOut));
+    draw(listenPaths[1], prog(t, 9.85, 10.3, easeInOut));
+    draw(listenPaths[2], prog(t, 10.3, 10.6, easeOut));
+    draw(listenPaths[3], prog(t, 10.45, 10.8, easeOut));
+
+    // ---- 04 Comprendre : apparition, rapprochement, point commun mis en évidence, stabilisation
+    const uIn = prog(t, 14.9, 15.3, easeOut), uOut = prog(t, 19.5, 19.8, easeOut);
+    set(el['ic-understand'], uIn * (1 - uOut), `translateY(${(1 - uIn) * 24 - uOut * 12}px)`);
+    const join = prog(t, 15.3, 16.4, easeInOut);
+    const ax = mix(56, 74, join), bx = mix(144, 126, join);
+    el['venn-a'].setAttribute('cx', ax); el['venn-fill'].setAttribute('cx', ax);
+    el['venn-b'].setAttribute('cx', bx); el['clip-b-c'].setAttribute('cx', bx);
+    el['venn-fill'].setAttribute('opacity', prog(t, 16.3, 16.9, easeOut));
+
+    // ---- 05 Accompagner : rapprochement lent, chemin partagé
+    const sIn = prog(t, 20.1, 20.5, easeOut), sOut = prog(t, 24.9, 25.2, easeOut);
+    set(el['ic-support'], sIn * (1 - sOut), `translateY(${-sOut * 12}px)`);
+    const near = prog(t, 20.5, 22.3, easeInOut);
+    el.p1.setAttribute('transform', `translate(${mix(-22, 0, near)} 0)`);
+    el.p2.setAttribute('transform', `translate(${mix(22, 0, near)} 0)`);
+    draw(el.ground, prog(t, 21.6, 22.8, easeInOut));
+
+    // ---- 06 Aller plus loin : trajectoire tracée, flèche, point qui avance
+    const fIn = t >= 25.5 ? 1 : 0, fOut = prog(t, 30.4, 30.7, easeOut);
+    set(el['ic-further'], fIn * (1 - fOut), `translateY(${-fOut * 12}px)`);
+    draw(el.route, prog(t, 25.5, 27.0, easeInOut));
+    set(el.arrow, prog(t, 26.9, 27.3, easeOut), `translateX(${(1 - prog(t, 26.9, 27.3, easeOut)) * -10}px)`);
+    const travel = prog(t, 27.3, 30.0, easeInOut);
+    const pt = el.route.getPointAtLength(routeLen * travel);
+    el.traveller.setAttribute('cx', pt.x); el.traveller.setAttribute('cy', pt.y);
+    el.traveller.style.opacity = prog(t, 27.2, 27.5, easeOut);
+
+    // ---- 07 Montée en tension : une ligne qui s'étire lentement, le sablier finit de s'écouler
+    const rIn = prog(t, 31.2, 34.0), rOut = prog(t, 34.0, 34.4, easeOut);
+    el.rule.style.opacity = (t >= 31.2 ? 1 : 0) * (1 - rOut);
+    el.rule.style.transform = `scaleX(${rIn})`;
+
+    // ---- 08 Compte à rebours : 800 ms par chiffre, puis silence 500 ms
+    ['d5','d4','d3','d2','d1','d0'].forEach((id, i) => {
+      const a = 34.6 + i * 0.8, b = a + 0.8;
+      const pin = prog(t, a, a + 0.25, easeOut), pout = prog(t, b - 0.2, b, easeOut);
+      set(el[id], pin * (1 - pout), `scale(${mix(0.94, 1, pin) + 0.03 * pout})`);
+    });
+
+    // ---- 09 Révélation puis end card stable
+    const bIn = prog(t, 39.9, 40.8, easeOut);
+    set(el.badge, bIn, `scale(${mix(0.96, 1, bIn)})`);
+    const k = prog(t, 41.0, 41.5, easeOut);
+    set(el.kicker, k, `translateY(${(1 - k) * 20}px)`);
+    set(el.title, k, `translateY(${(1 - k) * 20}px)`);
+    const s = prog(t, 41.5, 41.9, easeOut);
+    set(el.signature, s, `translateY(${(1 - s) * 20}px)`);
+    const d = prog(t, 41.8, 42.2, easeOut);
+    set(el.date, d, `translateY(${(1 - d) * 20}px)`);
+  }
+
+  window.TEASER_DURATION = DURATION;
+  window.renderAt = renderAt;
+
+  // ---- Lecture interactive / mise à l'échelle
+  const capture = new URLSearchParams(location.search).has('capture');
+  if (capture) document.body.classList.add('capture');
+  const vp = $('viewport');
+  function fit() {
+    if (capture) { vp.style.transform = ''; vp.style.width = vp.style.height = ''; return; }
+    const s = Math.min((innerHeight - 70) / 1920, (innerWidth - 32) / 1080);
+    vp.style.transform = `scale(${s})`;
+    vp.parentElement.style.minHeight = '';
+    vp.style.marginBottom = `${-1920 * (1 - s)}px`; vp.style.marginRight = `${-1080 * (1 - s)}px`;
+  }
+  addEventListener('resize', fit); fit();
+
+  let playing = false, t0 = 0, start = 0;
+  const scrub = $('scrub'), clock = $('clock'), btn = $('play');
+  function show(t) { renderAt(t); scrub.value = t; clock.textContent = t.toFixed(2).replace('.', ',').padStart(5, '0') + ' s'; }
+  function loop(now) {
+    if (!playing) return;
+    const t = t0 + (now - start) / 1000;
+    if (t >= DURATION) { playing = false; btn.textContent = 'Lecture'; show(DURATION); return; }
+    show(t); requestAnimationFrame(loop);
+  }
+  function play() { if (+scrub.value >= DURATION) scrub.value = 0; t0 = +scrub.value; start = performance.now(); playing = true; btn.textContent = 'Pause'; requestAnimationFrame(loop); }
+  function pause() { playing = false; btn.textContent = 'Lecture'; }
+  btn.onclick = () => playing ? pause() : play();
+  $('restart').onclick = () => { scrub.value = 0; play(); };
+  scrub.oninput = () => { pause(); show(+scrub.value); };
+
+  show(0);
+  if (!capture) document.fonts.ready.then(() => setTimeout(play, 400));
+})();
+</script>
+</body>
+</html>
