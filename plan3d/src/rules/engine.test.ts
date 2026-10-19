@@ -121,3 +121,38 @@ describe('immeuble R+2 du client (T2 proposé)', () => {
     expect(ids(sampleImmeubleT2('R+1'))).toContain('garde-corps-terrasse');
   });
 });
+
+describe('bâtiment multi-niveaux', () => {
+  it('immeuble complet : aucune non-conformité, contrôle par logement', async () => {
+    const { sampleImmeuble } = await import('../model/sample');
+    const plan = sampleImmeuble();
+    const issues = checkPlan(plan);
+    expect(issues.filter((i) => i.severity === 'error')).toEqual([]);
+    const scopes = new Set(issues.map((i) => i.scope).filter(Boolean));
+    expect(scopes).toContain('R+2 · Logement B');
+  });
+
+  it('signale un étage sans escalier', async () => {
+    const { sampleImmeuble } = await import('../model/sample');
+    const plan = sampleImmeuble();
+    plan.rooms = plan.rooms.filter((r) => !(r.type === 'escalier' && (r.level ?? 0) === 1));
+    expect(ids(plan)).toContain('niveau-inaccessible');
+  });
+
+  it('exige une trémie au-dessus de l’escalier', async () => {
+    const { sampleImmeuble } = await import('../model/sample');
+    const plan = sampleImmeuble();
+    const tremie = plan.rooms.find((r) => r.type === 'tremie')!;
+    tremie.type = 'degagement';
+    expect(ids(plan)).toContain('tremie');
+  });
+
+  it('ignore les pièces d’un autre niveau pour les chevauchements', () => {
+    const plan: Plan = {
+      ...emptyPlan(),
+      levels: ['RDC', 'R+1'],
+      rooms: [makeRoom('sejour', 0, 0), makeRoom('sejour', 0, 0, { level: 1 })],
+    };
+    expect(ids(plan)).not.toContain('chevauchement');
+  });
+});

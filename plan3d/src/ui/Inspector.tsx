@@ -1,8 +1,8 @@
-import { area, sideLength, stairGeometry } from '../model/geometry';
+import { area, levelOf, sideLength, stairGeometry } from '../model/geometry';
 import { makeOpening } from '../model/sample';
 import type { Opening, OpeningKind, Plan, Room, Side } from '../model/types';
 import { ROOM_TYPES, ROOM_TYPE_ORDER } from '../rules/catalog';
-import { metrics } from '../rules/engine';
+import { metrics, unitsOf } from '../rules/engine';
 import { CheckField, NumberField, SelectField, TextField } from './fields';
 
 const fmt = (v: number, d = 2) => v.toFixed(d).replace('.', ',');
@@ -11,6 +11,7 @@ const KIND_OPTIONS: { value: OpeningKind; label: string }[] = [
   { value: 'porte', label: 'Porte' },
   { value: 'fenetre', label: 'Fenêtre' },
   { value: 'porte-fenetre', label: 'Porte-fenêtre' },
+  { value: 'baie', label: 'Baie libre (passage)' },
 ];
 const SIDE_OPTIONS: { value: Side; label: string }[] = [
   { value: 'N', label: 'Nord (haut)' },
@@ -58,6 +59,16 @@ export function Inspector({ plan, room, update, onDelete }: Props) {
         options={ROOM_TYPE_ORDER.map((t) => ({ value: t, label: ROOM_TYPES[t].label }))}
         onChange={(type) => setRoom({ type, ...(type === 'escalier' && !room.steps ? { steps: 16 } : {}) })}
       />
+      <div className="grid2">
+        <TextField label="Logement (vide = communs)" value={room.unit ?? ''}
+          onChange={(unit) => setRoom({ unit: unit.trim() || undefined })} />
+        <SelectField
+          label="Niveau"
+          value={String(levelOf(room))}
+          options={plan.levels.map((n, i) => ({ value: String(i), label: n }))}
+          onChange={(v) => setRoom({ level: Number(v) })}
+        />
+      </div>
       <div className="grid2">
         <NumberField label="Largeur (x)" value={room.w} min={0.3} onChange={(w) => setRoom({ w })} />
         <NumberField label="Profondeur (y)" value={room.d} min={0.3} onChange={(d) => setRoom({ d })} />
@@ -124,6 +135,7 @@ export function Inspector({ plan, room, update, onDelete }: Props) {
           <button onClick={() => addOpening('porte')}>+ Porte</button>
           <button onClick={() => addOpening('fenetre')}>+ Fenêtre</button>
           <button onClick={() => addOpening('porte-fenetre')}>+ Porte-fenêtre</button>
+          <button onClick={() => addOpening('baie')}>+ Baie libre</button>
         </div>
       </section>
     </div>
@@ -132,7 +144,9 @@ export function Inspector({ plan, room, update, onDelete }: Props) {
 
 function PlanSettings({ plan, update }: { plan: Plan; update: (fn: (p: Plan) => Plan) => void }) {
   const set = (patch: Partial<Plan>) => update((p) => ({ ...p, ...patch }));
-  const m = metrics(plan);
+  const units = unitsOf(plan).filter((u) => u.name);
+  // Avec plusieurs logements, les parties communes sont exclues de la SHAB.
+  const m = metrics(units.length ? { ...plan, rooms: units.flatMap((u) => u.rooms) } : plan);
   return (
     <div className="panel inspector">
       <header>
@@ -144,27 +158,51 @@ function PlanSettings({ plan, update }: { plan: Plan; update: (fn: (p: Plan) => 
         <NumberField label="Épaisseur plancher" value={plan.slabThickness} min={0} onChange={(slabThickness) => set({ slabThickness })} />
         <NumberField label="Cloisons" value={plan.partitionThickness} min={0.05} onChange={(partitionThickness) => set({ partitionThickness })} />
         <NumberField label="Murs de façade" value={plan.exteriorWallThickness} min={0.1} onChange={(exteriorWallThickness) => set({ exteriorWallThickness })} />
-        <NumberField label="Occupants prévus" value={plan.occupants} digits={0} unit="" step={1} min={0}
+        <NumberField label="Occupants par logement" value={plan.occupants} digits={0} unit="" step={1} min={0}
           onChange={(occupants) => set({ occupants: Math.round(occupants) })} />
       </div>
       <CheckField label="Logement neuf soumis à l’accessibilité PMR" value={plan.accessible} onChange={(accessible) => set({ accessible })} />
-      <CheckField label="Logement en étage (garde-corps)" value={plan.upperFloor} onChange={(upperFloor) => set({ upperFloor })} />
+      <CheckField label="Plan d’un seul niveau situé en étage" value={plan.upperFloor} onChange={(upperFloor) => set({ upperFloor })} />
       <section>
         <h3>Synthèse</h3>
         <dl className="metrics">
-          <dt>Surface habitable</dt>
-          <dd>{fmt(m.habitableArea)} m²</dd>
-          <dt>Volume habitable</dt>
-          <dd>{fmt(m.habitableVolume, 1)} m³</dd>
-          <dt>Surface de baies</dt>
-          <dd>
-            {fmt(m.glazingArea)} m² ({fmt(m.glazingRatio * 100, 1)} % — mini 16,7 %)
-          </dd>
+          <dt>Niveaux</dt>
+          <dd>{plan.levels.join(', ')}</dd>
           <dt>Pièces</dt>
           <dd>{plan.rooms.length}</dd>
+          <dt>{units.length ? 'SHAB des logements' : 'Surface habitable'}</dt>
+          <dd>{fmt(m.habitableArea)} m²</dd>
+          <dt>Baies / SHAB</dt>
+          <dd>
+            {fmt(m.glazingRatio * 100, 1)} % (mini 16,7 %)
+          </dd>
         </dl>
+        {units.length > 1 && (
+          <table className="units">
+            <thead>
+              <tr>
+                <th>Logement</th>
+                <th>SHAB</th>
+                <th>Baies</th>
+              </tr>
+            </thead>
+            <tbody>
+              {units.map((u) => {
+                const um = metrics({ ...plan, rooms: u.rooms });
+                return (
+                  <tr key={u.name}>
+                    <td>{u.name}</td>
+                    <td>{fmt(um.habitableArea, 1)} m²</td>
+                    <td>{fmt(um.glazingRatio * 100, 1)} %</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
         <p className="muted">
-          Surfaces calculées sur cotes intérieures. Sélectionnez une pièce pour la modifier.
+          Surfaces sur cotes intérieures. Renseignez « Logement » sur chaque pièce pour contrôler plusieurs logements
+          séparément ; les pièces sans logement sont des parties communes.
         </p>
       </section>
     </div>

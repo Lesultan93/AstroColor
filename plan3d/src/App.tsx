@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { PlanEditor } from './editor/PlanEditor';
-import { EXAMPLES, emptyPlan, makeRoom } from './model/sample';
+import { levelOf } from './model/geometry';
+import { EXAMPLES, copyToLevel, emptyPlan, makeRoom } from './model/sample';
 import { usePlan } from './model/store';
 import type { Plan, RoomType } from './model/types';
 import { ROOM_TYPES, ROOM_TYPE_ORDER } from './rules/catalog';
@@ -17,6 +18,9 @@ export default function App() {
   const [layout, setLayout] = useState<Layout>('split');
   const [cut, setCut] = useState(false);
   const [labels, setLabels] = useState(true);
+  const [level, setLevel] = useState(0);
+  const [showAbove, setShowAbove] = useState(false);
+  const activeLevel = Math.min(level, plan.levels.length - 1);
   const fileInput = useRef<HTMLInputElement>(null);
 
   const issues = useMemo(() => checkPlan(plan), [plan]);
@@ -28,9 +32,17 @@ export default function App() {
 
   const selected = plan.rooms.find((r) => r.id === selectedId) ?? null;
 
+  /** Sélectionne une pièce et bascule sur son niveau. */
+  const select = (id: string | null) => {
+    setSelectedId(id);
+    const r = id ? plan.rooms.find((x) => x.id === id) : null;
+    if (r) setLevel(levelOf(r));
+  };
+
   const addRoom = (type: RoomType) => {
-    const maxX = plan.rooms.reduce((m, r) => Math.max(m, r.x + r.w), 0);
-    const room = makeRoom(type, plan.rooms.length ? Math.round((maxX + 1) * 20) / 20 : 0, 0);
+    const here = plan.rooms.filter((r) => levelOf(r) === activeLevel);
+    const maxX = here.reduce((m, r) => Math.max(m, r.x + r.w), 0);
+    const room = makeRoom(type, here.length ? Math.round((maxX + 1) * 20) / 20 : 0, 0, { level: activeLevel });
     update((p) => ({ ...p, rooms: [...p.rooms, room] }));
     setSelectedId(room.id);
   };
@@ -42,6 +54,46 @@ export default function App() {
 
   const load = (p: Plan) => {
     update(p);
+    setSelectedId(null);
+    setLevel(0);
+  };
+
+  const nextLevelName = (n: number) => (n === 0 ? 'RDC' : `R+${n}`);
+
+  const addLevel = (duplicate: boolean) => {
+    const n = plan.levels.length;
+    const name = nextLevelName(n);
+    const from = plan.levels[activeLevel];
+    update((p) => ({
+      ...p,
+      levels: [...p.levels, name],
+      rooms: duplicate
+        ? [
+            ...p.rooms,
+            ...copyToLevel(
+              p.rooms.filter((r) => levelOf(r) === activeLevel),
+              n,
+              (u) => (u.startsWith(from) ? name + u.slice(from.length) : u),
+            ),
+          ]
+        : p.rooms,
+    }));
+    setLevel(n);
+    setSelectedId(null);
+  };
+
+  const removeLevel = () => {
+    if (plan.levels.length < 2) return;
+    const count = plan.rooms.filter((r) => levelOf(r) === activeLevel).length;
+    if (count > 0 && !confirm(`Supprimer ${plan.levels[activeLevel]} et ses ${count} pièce(s) ?`)) return;
+    update((p) => ({
+      ...p,
+      levels: p.levels.filter((_, i) => i !== activeLevel),
+      rooms: p.rooms
+        .filter((r) => levelOf(r) !== activeLevel)
+        .map((r) => (levelOf(r) > activeLevel ? { ...r, level: levelOf(r) - 1 } : r)),
+    }));
+    setLevel(Math.max(0, activeLevel - 1));
     setSelectedId(null);
   };
 
@@ -58,7 +110,7 @@ export default function App() {
     try {
       const data = JSON.parse(await file.text()) as Plan;
       if (!Array.isArray(data.rooms)) throw new Error('format');
-      load({ ...emptyPlan(), ...data });
+      load({ ...emptyPlan(), ...data, levels: data.levels?.length ? data.levels : ['RDC'] });
     } catch {
       alert('Fichier invalide : un export Plan3D (.json) est attendu.');
     }
@@ -151,6 +203,10 @@ export default function App() {
             <span>Coupe à 1,10 m</span>
           </label>
           <label className="check inline">
+            <input type="checkbox" checked={showAbove} onChange={(e) => setShowAbove(e.target.checked)} />
+            <span>Niveaux supérieurs</span>
+          </label>
+          <label className="check inline">
             <input type="checkbox" checked={labels} onChange={(e) => setLabels(e.target.checked)} />
             <span>Étiquettes 3D</span>
           </label>
@@ -158,6 +214,32 @@ export default function App() {
       </header>
 
       <aside className="palette">
+        <h2>Niveaux</h2>
+        <div className="levels">
+          {plan.levels
+            .map((name, i) => ({ name, i }))
+            .reverse()
+            .map(({ name, i }) => (
+              <button
+                key={i}
+                className={i === activeLevel ? 'active' : ''}
+                onClick={() => {
+                  setLevel(i);
+                  setSelectedId(null);
+                }}
+              >
+                {name}
+                <small>{plan.rooms.filter((r) => levelOf(r) === i).length} pièces</small>
+              </button>
+            ))}
+        </div>
+        <div className="row">
+          <button onClick={() => addLevel(false)} title="Ajouter un niveau vide au-dessus">+ Niveau</button>
+          <button onClick={() => addLevel(true)} title="Copier le niveau actif au-dessus">Dupliquer</button>
+          <button className="danger" onClick={removeLevel} disabled={plan.levels.length < 2} title="Supprimer le niveau actif">
+            ✕
+          </button>
+        </div>
         <h2>Ajouter</h2>
         {ROOM_TYPE_ORDER.map((t) => (
           <button key={t} onClick={() => addRoom(t)}>
@@ -175,9 +257,10 @@ export default function App() {
         {layout !== '3d' && (
           <PlanEditor
             plan={plan}
+            activeLevel={activeLevel}
             selectedId={selectedId}
             severityByRoom={severityByRoom}
-            onSelect={setSelectedId}
+            onSelect={select}
             checkpoint={checkpoint}
             preview={preview}
           />
@@ -186,8 +269,10 @@ export default function App() {
           <Viewer3D
             plan={plan}
             selectedId={selectedId}
-            onSelect={setSelectedId}
+            onSelect={select}
             cutHeight={cut ? 1.1 : null}
+            activeLevel={activeLevel}
+            showAbove={showAbove}
             showLabels={labels}
           />
         )}
@@ -195,7 +280,7 @@ export default function App() {
 
       <aside className="sidebar">
         <Inspector plan={plan} room={selected} update={update} onDelete={deleteRoom} />
-        <IssuesPanel issues={issues} onSelect={setSelectedId} />
+        <IssuesPanel issues={issues} onSelect={select} />
       </aside>
 
       <footer className="disclaimer">

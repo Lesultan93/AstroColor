@@ -68,6 +68,13 @@ button.link { border: none; background: none; color: var(--accent); padding: 0; 
   gap: 6px;
   overflow: auto;
 }
+.levels { display: flex; flex-direction: column; gap: 4px; }
+.levels button { justify-content: space-between; font-weight: 600; }
+.levels button small { font-weight: 400; color: var(--muted); font-size: 11px; }
+.levels button.active { background: var(--accent); color: white; border-color: var(--accent); }
+.levels button.active small { color: #dbeafe; }
+.palette h2 + .levels { margin-bottom: 2px; }
+.palette .row + h2 { margin-top: 10px; }
 .palette button { display: flex; align-items: center; gap: 8px; text-align: left; }
 .palette i { width: 12px; height: 12px; border-radius: 3px; border: 1px solid #0002; flex: none; }
 
@@ -95,6 +102,9 @@ button.link { border: none; background: none; color: var(--accent); padding: 0; 
 .door line, .door path { stroke: #374151; stroke-width: 1.2; fill: none; vector-effect: non-scaling-stroke; pointer-events: none; }
 .door .swing { stroke-dasharray: 3 3; }
 .window line { stroke: #0369a1; stroke-width: 1.2; vector-effect: non-scaling-stroke; pointer-events: none; }
+.ghost { fill: none; stroke: #94a3b8; stroke-width: 1; stroke-dasharray: 4 3; vector-effect: non-scaling-stroke; }
+.ghost.escalier { fill: #a3a38033; }
+.void { stroke: #64748b; stroke-width: 1; vector-effect: non-scaling-stroke; fill: none; }
 .stair line { stroke: #57534e; stroke-width: 1; vector-effect: non-scaling-stroke; }
 .selection { fill: none; stroke: var(--accent); stroke-width: 2; vector-effect: non-scaling-stroke; }
 .handle { fill: white; stroke: var(--accent); stroke-width: 2; vector-effect: non-scaling-stroke; }
@@ -134,6 +144,10 @@ button.link { border: none; background: none; color: var(--accent); padding: 0; 
 .metrics dt { color: var(--muted); }
 .metrics dd { margin: 0; text-align: right; }
 
+.units { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
+.units th, .units td { text-align: left; padding: 3px 4px; border-bottom: 1px solid var(--line); }
+.units td:not(:first-child), .units th:not(:first-child) { text-align: right; }
+.scope { display: inline-block; font-size: 11px; font-weight: 600; color: #334155; background: #e2e8f0; border-radius: 3px; padding: 0 5px; margin-bottom: 3px; }
 .chips { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
 .chip { font-size: 12px; border-radius: 999px; }
 .chip.error { color: var(--error); border-color: var(--error); }

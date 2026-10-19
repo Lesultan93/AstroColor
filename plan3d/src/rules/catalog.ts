@@ -51,6 +51,11 @@ export const SOURCES = {
     kind: 'norme',
     verify: 'Hauteur réductible selon l’épaisseur de l’allège (0,90 m ou 0,80 m) : à vérifier au cas par cas.',
   },
+  ELAN: {
+    label: 'Loi ELAN du 23 novembre 2018 — ascenseur dans les logements collectifs neufs',
+    kind: 'reglementaire',
+    verify: 'Seuil (bâtiments de plus de deux étages, soit R+3) et date d’application à confirmer.',
+  },
   NEUFERT: { label: 'Neufert, Les éléments des projets de construction', kind: 'usage' },
   BLONDEL: { label: 'Formule de Blondel : 2h + g = 60 à 64 cm', kind: 'usage' },
   USAGE: { label: 'Règle de l’art / usage professionnel', kind: 'usage' },
@@ -197,6 +202,17 @@ export const ROOM_TYPES: Record<RoomType, RoomTypeSpec> = {
     minWidth: 0,
     rationale: '',
     defaultSize: [3, 2],
+  },
+  tremie: {
+    label: 'Trémie / vide',
+    color: '#f4f4f5',
+    principal: false,
+    habitable: false,
+    minArea: 0,
+    recommendedArea: 0,
+    minWidth: 0,
+    rationale: '',
+    defaultSize: [1, 4],
   },
 };
 

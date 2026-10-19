@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { area, openingLine } from '../model/geometry';
+import { area, levelOf, openingLine } from '../model/geometry';
 import type { Opening, Plan, Room } from '../model/types';
 import { OUTWARD, pieceRect, wallPieces } from '../model/walls';
 import { ROOM_TYPES } from '../rules/catalog';
@@ -24,6 +24,7 @@ interface View {
 
 interface Props {
   plan: Plan;
+  activeLevel: number;
   selectedId: string | null;
   severityByRoom: Map<string, Severity>;
   onSelect: (id: string | null) => void;
@@ -108,7 +109,7 @@ function WindowSymbol({ room, o, depth }: { room: Room; o: Opening; depth: numbe
   );
 }
 
-export function PlanEditor({ plan, selectedId, severityByRoom, onSelect, checkpoint, preview }: Props) {
+export function PlanEditor({ plan, activeLevel, selectedId, severityByRoom, onSelect, checkpoint, preview }: Props) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [view, setView] = useState<View>({ scale: 60, tx: 40, ty: 40 });
   const [drag, setDrag] = useState<Drag | null>(null);
@@ -152,7 +153,10 @@ export function PlanEditor({ plan, selectedId, severityByRoom, onSelect, checkpo
     return [(e.clientX - rect.left - view.tx) / view.scale, (e.clientY - rect.top - view.ty) / view.scale];
   };
 
-  const pieces = useMemo(() => plan.rooms.flatMap((r) => wallPieces(plan, r)), [plan]);
+  const rooms = useMemo(() => plan.rooms.filter((r) => levelOf(r) === activeLevel), [plan.rooms, activeLevel]);
+  // Niveau inférieur en filigrane, pour superposer escaliers, trémies et murs porteurs.
+  const below = useMemo(() => plan.rooms.filter((r) => levelOf(r) === activeLevel - 1), [plan.rooms, activeLevel]);
+  const pieces = useMemo(() => rooms.flatMap((r) => wallPieces(plan, r)), [plan, rooms]);
 
   const startMove = (e: React.PointerEvent, room: Room) => {
     if (e.button !== 0) return;
@@ -187,7 +191,7 @@ export function PlanEditor({ plan, selectedId, severityByRoom, onSelect, checkpo
       return;
     }
     const [wx, wy] = toWorld(e);
-    const others = plan.rooms.filter((r) => r.id !== drag.id);
+    const others = rooms.filter((r) => r.id !== drag.id);
     const xs = others.map((r) => [r.x, r.x + r.w] as [number, number]);
     const ys = others.map((r) => [r.y, r.y + r.d] as [number, number]);
     const gap = plan.partitionThickness;
@@ -216,7 +220,7 @@ export function PlanEditor({ plan, selectedId, severityByRoom, onSelect, checkpo
   const endDrag = () => setDrag(null);
 
   const handle = 8 / view.scale;
-  const selected = plan.rooms.find((r) => r.id === selectedId) ?? null;
+  const selected = rooms.find((r) => r.id === selectedId) ?? null;
 
   return (
     <div className="editor">
@@ -240,7 +244,11 @@ export function PlanEditor({ plan, selectedId, severityByRoom, onSelect, checkpo
         <g transform={`translate(${view.tx} ${view.ty}) scale(${view.scale})`}>
           <rect x={-200} y={-200} width={400} height={400} fill="url(#grid-major)" pointerEvents="none" />
 
-          {plan.rooms.map((r) => {
+          {below.map((r) => (
+            <rect key={r.id} x={r.x} y={r.y} width={r.w} height={r.d} className={`ghost ${r.type}`} pointerEvents="none" />
+          ))}
+
+          {rooms.map((r) => {
             const sev = severityByRoom.get(r.id);
             return (
               <g key={r.id} className={`room ${r.id === selectedId ? 'selected' : ''} ${sev ?? ''}`}>
@@ -254,6 +262,13 @@ export function PlanEditor({ plan, selectedId, severityByRoom, onSelect, checkpo
                   onPointerDown={(e) => startMove(e, r)}
                 />
                 {r.type === 'escalier' && <StairHatch room={r} />}
+                {r.type === 'tremie' && (
+                  <path
+                    d={`M ${r.x} ${r.y} L ${r.x + r.w} ${r.y + r.d} M ${r.x + r.w} ${r.y} L ${r.x} ${r.y + r.d}`}
+                    className="void"
+                    pointerEvents="none"
+                  />
+                )}
                 <text x={r.x + r.w / 2} y={r.y + r.d / 2 - 0.14} className="label name" fontSize={0.26}>
                   {r.name}
                 </text>
@@ -274,9 +289,9 @@ export function PlanEditor({ plan, selectedId, severityByRoom, onSelect, checkpo
               return <rect key={i} x={rc.x} y={rc.y} width={rc.w} height={rc.d} className="wall" />;
             })}
 
-          {plan.rooms.flatMap((r) =>
+          {rooms.flatMap((r) =>
             r.openings.map((o) =>
-              o.kind === 'porte' ? (
+              o.kind === 'baie' ? null : o.kind === 'porte' ? (
                 <DoorSymbol key={o.id} room={r} o={o} />
               ) : (
                 <WindowSymbol key={o.id} room={r} o={o} depth={plan.exteriorWallThickness} />

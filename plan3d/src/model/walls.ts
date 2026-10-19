@@ -40,10 +40,20 @@ export function wallPieces(plan: Plan, room: Room): WallPiece[] {
     const openings = openingsOnSide(plan, room, side);
 
     for (const { a: a0, b: b0, t, low } of intervals) {
-      if (low) {
-        // Rive de terrasse : muret / garde-corps à 1,00 m, sans baie.
-        pieces.push({ side, axis: edge.axis, c: edge.c, outward: OUTWARD[side], thickness: t,
-          from: a0, to: b0, bottom: 0, top: Math.min(H, 1), kind: 'plein' });
+      if (low || room.type === 'tremie') {
+        // Rive de terrasse ou de trémie : garde-corps à 1,00 m, interrompu aux ouvertures.
+        let cursor = a0;
+        const spans = openings
+          .map(({ line }) => [Math.max(line.from, a0), Math.min(line.to, b0)] as const)
+          .filter(([f, e]) => e - f > EPS)
+          .sort((x, y) => x[0] - y[0]);
+        for (const [f, e] of [...spans, [b0, b0] as const]) {
+          if (f - cursor > EPS) {
+            pieces.push({ side, axis: edge.axis, c: edge.c, outward: OUTWARD[side], thickness: t,
+              from: cursor, to: f, bottom: 0, top: Math.min(H, 1), kind: 'plein' });
+          }
+          cursor = Math.max(cursor, e);
+        }
         continue;
       }
       // Prolonge aux angles de la pièce pour fermer les coins.

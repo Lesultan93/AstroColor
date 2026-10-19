@@ -9,6 +9,7 @@ export const OPENING_DEFAULTS: Record<OpeningKind, Omit<Opening, 'id' | 'side' |
   porte: { kind: 'porte', width: 0.83, height: 2.04, sill: 0 },
   fenetre: { kind: 'fenetre', width: 1.2, height: 1.35, sill: 0.95 },
   'porte-fenetre': { kind: 'porte-fenetre', width: 1.4, height: 2.15, sill: 0 },
+  baie: { kind: 'baie', width: 0.9, height: 2.2, sill: 0 },
 };
 
 export function makeOpening(kind: OpeningKind, side: Side, offset: number, patch: Partial<Opening> = {}): Opening {
@@ -41,6 +42,7 @@ export const emptyPlan = (): Plan => ({
   exteriorWallThickness: 0.2,
   accessible: true,
   upperFloor: false,
+  levels: ['RDC'],
   rooms: [],
 });
 
@@ -107,21 +109,51 @@ export function sampleT3(): Plan {
   return { ...emptyPlan(), name: 'Appartement T3 — exemple', occupants: 4, rooms };
 }
 
+/** Symétrie d'axe vertical x = axis (logement droit = miroir du logement gauche). */
+export function mirrorRooms(rooms: Room[], axis: number): Room[] {
+  const flip: Record<Side, Side> = { N: 'N', S: 'S', E: 'W', W: 'E' };
+  return rooms.map((r) => ({
+    ...r,
+    id: uid('r'),
+    x: Math.round((2 * axis - r.x - r.w) * 1000) / 1000,
+    openings: r.openings.map((o) => ({
+      ...o,
+      id: uid('o'),
+      side: flip[o.side],
+      offset: o.side === 'N' || o.side === 'S' ? Math.round((r.w - o.offset - o.width) * 1000) / 1000 : o.offset,
+    })),
+  }));
+}
+
+/** Copie de pièces vers un autre niveau, avec de nouveaux identifiants. */
+export function copyToLevel(rooms: Room[], level: number, rename: (unit: string) => string = (u) => u): Room[] {
+  return rooms.map((r) => ({
+    ...r,
+    id: uid('r'),
+    level,
+    unit: r.unit ? rename(r.unit) : r.unit,
+    openings: r.openings.map((o) => ({ ...o, id: uid('o') })),
+  }));
+}
+
 /**
- * Immeuble R+2 du client — logement gauche (le logement droit est symétrique).
- * Proposition : la pièce principale en L (7 × 6 m moins la salle d'eau) est
- * redécoupée en séjour 7 × 3 m, chambre 4 × 3 m et dégagement 3 × 1 m.
- * Hypothèse : les cotes du croquis sont prises comme cotes intérieures.
+ * Logement gauche du client (le droit est symétrique), en T2.
+ * La pièce principale en L (7 × 6 m moins la salle d'eau) est redécoupée en
+ * séjour 7 × 3 m, chambre 4 × 3 m et dégagement 3 × 1 m.
+ * Hypothèse : cotes du croquis = cotes intérieures.
  */
-export function sampleImmeubleT2(level: 'RDC' | 'R+1'): Plan {
-  const rooms: Room[] = [
+function clientT2(unit: string, level: number): Room[] {
+  const base = { level, unit };
+  return [
     makeRoom('terrasse', 0, 0, {
+      ...base,
       name: 'Terrasse',
       w: 4,
       d: 2,
       openings: [makeOpening('porte', 'E', 0.2, { width: 0.8 })],
     }),
     makeRoom('cuisine', 4.07, 0, {
+      ...base,
       name: 'Cuisine',
       w: 3,
       d: 2,
@@ -131,16 +163,18 @@ export function sampleImmeubleT2(level: 'RDC' | 'R+1'): Plan {
       ],
     }),
     makeRoom('sejour', 0, 2.07, {
+      ...base,
       name: 'Séjour',
       w: 7.07,
       d: 3,
       openings: [
         makeOpening('porte-fenetre', 'N', 1.3, { width: 1.4 }),
         makeOpening('fenetre', 'W', 0.8, { width: 1.4 }),
-        makeOpening('porte', 'E', 0.9, { width: 0.93, entrance: true }),
+        makeOpening('porte', 'E', 0.6, { width: 0.93, entrance: true }),
       ],
     }),
     makeRoom('chambre', 0, 5.14, {
+      ...base,
       name: 'Chambre',
       w: 4,
       d: 3,
@@ -150,12 +184,14 @@ export function sampleImmeubleT2(level: 'RDC' | 'R+1'): Plan {
       ],
     }),
     makeRoom('degagement', 4.07, 5.14, {
+      ...base,
       name: 'Dégagement',
       w: 3,
       d: 1,
       openings: [makeOpening('porte', 'N', 0.5, { width: 0.93 })],
     }),
     makeRoom('sdb', 4.07, 6.21, {
+      ...base,
       name: 'Salle d’eau + WC',
       w: 3,
       d: 2,
@@ -166,17 +202,101 @@ export function sampleImmeubleT2(level: 'RDC' | 'R+1'): Plan {
       ],
     }),
   ];
+}
+
+/** Hall central de 2 m : palier, escalier droit 1,00 × 4,41 m et passage latéral. */
+function clientHall(plan: { ceilingHeight: number }, level: number, top: boolean): Room[] {
+  const x = 7.14;
+  const H = plan.ceilingHeight;
+  const rooms: Room[] = [
+    level === 0
+      ? makeRoom('entree', x, 0, {
+          level,
+          name: 'Porche',
+          w: 2,
+          d: 2,
+          openings: [
+            makeOpening('baie', 'N', 0.3, { width: 1.4, height: H }),
+            makeOpening('porte', 'S', 0.3, { width: 1.4, height: 2.15 }),
+          ],
+        })
+      : makeRoom('terrasse', x, 0, {
+          level,
+          name: 'Loggia commune',
+          w: 2,
+          d: 2,
+          openings: [makeOpening('porte', 'S', 0.3, { width: 1.4, height: 2.15 })],
+        }),
+    makeRoom('degagement', x, 2.07, {
+      level,
+      name: 'Palier',
+      w: 2,
+      d: 1.66,
+      openings: [makeOpening('baie', 'S', 1.07, { width: 0.93, height: H })],
+    }),
+    makeRoom('degagement', x + 1.07, 3.8, { level, name: 'Passage', w: 0.93, d: 4.41 }),
+  ];
+  if (top) {
+    rooms.push(
+      makeRoom('tremie', x, 3.8, {
+        level,
+        name: 'Trémie',
+        w: 1,
+        d: 4.41,
+        openings: [makeOpening('baie', 'E', 0, { width: 4.41, height: H })],
+      }),
+    );
+  } else {
+    rooms.push(
+      makeRoom('escalier', x, 3.8, {
+        level,
+        name: 'Escalier',
+        w: 1,
+        d: 4.41,
+        steps: 16,
+        openings: [
+          makeOpening('baie', 'N', 0, { width: 1, height: H }),
+          makeOpening('baie', 'E', 0, { width: 4.41, height: H }),
+        ],
+      }),
+    );
+  }
+  return rooms;
+}
+
+/**
+ * Immeuble R+2 du client : 2 logements T2 symétriques par niveau autour d'un
+ * hall central. Hypothèse : le R+2 reprend l'aménagement des niveaux inférieurs.
+ */
+export function sampleImmeuble(): Plan {
+  const plan: Plan = {
+    ...emptyPlan(),
+    name: 'Immeuble R+2 — 6 logements T2',
+    occupants: 3,
+    levels: ['RDC', 'R+1', 'R+2'],
+  };
+  const axis = (0 + 16.28) / 2;
+  plan.rooms = plan.levels.flatMap((name, level) => {
+    const left = clientT2(`${name} · Logement A`, level);
+    const right = mirrorRooms(clientT2(`${name} · Logement B`, level), axis);
+    return [...left, ...right, ...clientHall(plan, level, level === plan.levels.length - 1)];
+  });
+  return plan;
+}
+
+/** Un seul logement du client, isolé (contrôle d'un T2 hors bâtiment). */
+export function sampleImmeubleT2(level: 'RDC' | 'R+1'): Plan {
   return {
     ...emptyPlan(),
     name: `Immeuble R+2 — ${level}, logement gauche (T2 proposé)`,
     occupants: 3,
     upperFloor: level !== 'RDC',
-    rooms,
+    rooms: clientT2('', 0).map((r) => ({ ...r, unit: undefined })),
   };
 }
 
 export const EXAMPLES: { id: string; label: string; build: () => Plan }[] = [
   { id: 't3', label: 'Appartement T3', build: sampleT3 },
-  { id: 'immeuble-rdc', label: 'Immeuble R+2 — RDC, T2 proposé', build: () => sampleImmeubleT2('RDC') },
-  { id: 'immeuble-r1', label: 'Immeuble R+2 — R+1, T2 proposé', build: () => sampleImmeubleT2('R+1') },
+  { id: 'immeuble', label: 'Immeuble R+2 complet (6 T2)', build: sampleImmeuble },
+  { id: 'immeuble-r1', label: 'Immeuble R+2 — un T2 en étage', build: () => sampleImmeubleT2('R+1') },
 ];

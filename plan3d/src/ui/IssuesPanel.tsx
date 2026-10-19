@@ -42,6 +42,7 @@ export function IssuesPanel({ issues, onSelect }: { issues: Issue[]; onSelect: (
               className={`issue ${i.severity} ${i.roomId ? 'clickable' : ''}`}
               onClick={() => i.roomId && onSelect(i.roomId)}
             >
+              {i.scope && <span className="scope">{i.scope}</span>}
               <p>{i.message}</p>
               <small>
                 <span className={`badge ${src.kind}`}>{KIND_LABELS[src.kind]}</span> {src.label}

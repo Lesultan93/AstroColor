@@ -13,12 +13,14 @@ export type RoomType =
   | 'bureau'
   | 'cellier'
   | 'escalier'
-  | 'terrasse';
+  | 'terrasse'
+  | 'tremie';
 
 /** Côté d'une pièce : N = haut (y min), S = bas, W = gauche (x min), E = droite. */
 export type Side = 'N' | 'S' | 'E' | 'W';
 
-export type OpeningKind = 'porte' | 'fenetre' | 'porte-fenetre';
+/** 'baie' = passage libre sans menuiserie (cuisine ouverte, départ d'escalier…). */
+export type OpeningKind = 'porte' | 'fenetre' | 'porte-fenetre' | 'baie';
 
 export interface Opening {
   id: string;
@@ -44,6 +46,10 @@ export interface Room {
   w: number;
   d: number;
   openings: Opening[];
+  /** Niveau (0 = RDC). */
+  level?: number;
+  /** Logement d'appartenance ; vide = parties communes. */
+  unit?: string;
   /** Salle d'eau intégrant le WC. */
   wcIncluded?: boolean;
   /** Escalier droit uniquement : nombre de hauteurs de marche. */
@@ -63,7 +69,9 @@ export interface Plan {
   exteriorWallThickness: number;
   /** Logement neuf soumis aux règles d'accessibilité PMR. */
   accessible: boolean;
-  /** Logement en étage (risque de chute par les baies). */
+  /** Force le contrôle « en étage » pour un plan d'un seul niveau situé en étage. */
   upperFloor: boolean;
+  /** Noms des niveaux, du bas vers le haut (index = Room.level). */
+  levels: string[];
   rooms: Room[];
 }

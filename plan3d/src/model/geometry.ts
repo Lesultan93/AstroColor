@@ -5,6 +5,11 @@ export const EPS = 1e-6;
 export const ADJACENCY_TOLERANCE = 0.03;
 
 export const round2 = (v: number) => Math.round(v * 100) / 100;
+export const levelOf = (r: Room) => r.level ?? 0;
+export const isGlazed = (o: Opening) => o.kind === 'fenetre' || o.kind === 'porte-fenetre';
+export const sameLevel = (a: Room, b: Room) => levelOf(a) === levelOf(b);
+/** Altitude du sol fini d'un niveau. */
+export const elevation = (plan: Plan, level: number) => level * (plan.ceilingHeight + plan.slabThickness);
 export const area = (r: Room) => r.w * r.d;
 export const sideLength = (r: Room, s: Side) => (s === 'N' || s === 'S' ? r.w : r.d);
 export const opposite: Record<Side, Side> = { N: 'S', S: 'N', E: 'W', W: 'E' };
@@ -41,6 +46,7 @@ export const overlapLength = (a0: number, a1: number, b0: number, b1: number) =>
 
 export function roomsOverlap(a: Room, b: Room): boolean {
   return (
+    sameLevel(a, b) &&
     overlapLength(a.x, a.x + a.w, b.x, b.x + b.w) > EPS &&
     overlapLength(a.y, a.y + a.d, b.y, b.y + b.d) > EPS
   );
@@ -60,7 +66,7 @@ export function neighbors(plan: Plan, room: Room, side: Side): Neighbor[] {
   const gap = maxGap(plan);
   const out: Neighbor[] = [];
   for (const other of plan.rooms) {
-    if (other.id === room.id) continue;
+    if (other.id === room.id || !sameLevel(other, room)) continue;
     const f = edgeLine(other, opposite[side]);
     // Le voisin doit être du bon côté (pas superposé) et à moins d'une cloison.
     const dist = side === 'N' || side === 'W' ? e.c - f.c : f.c - e.c;

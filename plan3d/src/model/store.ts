@@ -8,7 +8,10 @@ const HISTORY_LIMIT = 100;
 function load(): Plan {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw) as Plan;
+    if (raw) {
+      const p = JSON.parse(raw) as Plan;
+      return { ...p, levels: p.levels?.length ? p.levels : ['RDC'] };
+    }
   } catch {
     // Stockage indisponible ou corrompu : on repart de l'exemple.
   }

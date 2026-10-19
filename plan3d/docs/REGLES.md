@@ -97,13 +97,27 @@ Ce sont des **recommandations**, pas des obligations.
 
 Ouvertures : portes de 2,00 m de haut au minimum (bloc-porte standard de 2,04 m) ; largeur ≥ 0,73 m hors logement accessible.
 
-## 9. Cohérence du modèle
+## 9. Bâtiment à plusieurs niveaux et logements
+
+- Chaque pièce porte un **niveau** (RDC, R+1…) et, facultativement, un **logement**. Les règles de décence, de surface par habitant, de baies, de porte d'entrée et d'accessibilité sont contrôlées **logement par logement**. Les pièces sans logement sont des parties communes. Un plan sans aucun logement nommé est traité comme un seul logement, ce qui couvre la maison sur plusieurs niveaux.
+- Les baies d'un logement en étage (niveau ≥ 1) déclenchent le contrôle des garde-corps.
+
+| Règle | Seuil | Source | Gravité |
+|---|---|---|---|
+| Niveau desservi | Chaque niveau occupé au-dessus du RDC a un escalier qui part du niveau inférieur | Modèle | Non conforme |
+| Trémie | Aucune pièce (hors escalier ou trémie) au-dessus d'un escalier | Modèle | Non conforme |
+| Arrivée d'escalier | Un escalier du dernier niveau n'a nulle part où arriver | Modèle | À revoir |
+| Ascenseur | Logements au R+3 ou plus en construction neuve | Loi ELAN (2018) | À revoir |
+
+**À vérifier :** le seuil de la loi ELAN (bâtiments de plus de deux étages) et sa date d'application. L'échappée sous une volée superposée n'est pas calculée.
+
+## 10. Cohérence du modèle
 
 Chevauchement de pièces, ouverture qui dépasse son mur ou la hauteur sous plafond, ouvertures superposées, pièce non desservie par une porte, absence de porte d'entrée.
 
 ## Non couvert en v0.1 (feuille de route)
 
-- Pièces non rectangulaires, murs biais, plusieurs niveaux.
+- Pièces non rectangulaires, murs biais, niveaux de hauteurs différentes.
 - Placement du mobilier et des équipements (lit, cuvette, receveur), qui permettrait un contrôle PMR exact.
 - Sécurité incendie, ventilation (VMC), acoustique, thermique.
 - Règles spécifiques au Gabon : à intégrer comme profil de règles distinct dès que des textes sourcés sont disponibles.

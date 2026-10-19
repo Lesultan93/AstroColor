@@ -2,6 +2,8 @@ import {
   EPS,
   area,
   doorLinks,
+  isGlazed,
+  levelOf,
   neighbors,
   openingLine,
   overlapLength,
@@ -21,6 +23,8 @@ export interface Issue {
   source: SourceId;
   roomId?: string;
   openingId?: string;
+  /** Logement concerné (plans à plusieurs logements). */
+  scope?: string;
 }
 
 export interface PlanMetrics {
@@ -41,7 +45,7 @@ export function metrics(plan: Plan): PlanMetrics {
     .reduce((s, r) => s + area(r), 0);
   const glazingArea = plan.rooms
     .flatMap((r) => r.openings)
-    .filter((o) => o.kind !== 'porte')
+    .filter(isGlazed)
     .reduce((s, o) => s + o.width * o.height, 0);
   return {
     habitableArea,
@@ -210,19 +214,8 @@ const decenceRules: Rule = (plan, push) => {
       });
     }
   }
-  if (plan.upperFloor) {
-    for (const r of plan.rooms.filter((x) => x.type === 'terrasse')) {
-      push({
-        ruleId: 'garde-corps-terrasse',
-        severity: 'warning',
-        message: `${r.name} en étage : garde-corps de 1,00 m de hauteur de protection sur les rives.`,
-        source: 'GARDE_CORPS',
-        roomId: r.id,
-      });
-    }
-  }
   for (const r of principals) {
-    const lit = r.openings.some((o) => o.kind !== 'porte');
+    const lit = r.openings.some(isGlazed);
     if (!lit) {
       push({
         ruleId: 'eclairement-naturel',
@@ -259,9 +252,20 @@ const programmeRules: Rule = (plan, push) => {
   }
 };
 
+const isUpper = (plan: Plan, r: Room) => plan.upperFloor || levelOf(r) > 0;
+
 const openingRules: Rule = (plan, push) => {
   const links = doorLinks(plan);
   for (const r of plan.rooms) {
+    if (r.type === 'terrasse' && isUpper(plan, r)) {
+      push({
+        ruleId: 'garde-corps-terrasse',
+        severity: 'warning',
+        message: `${r.name} en étage : garde-corps de 1,00 m de hauteur de protection sur les rives.`,
+        source: 'GARDE_CORPS',
+        roomId: r.id,
+      });
+    }
     for (const o of r.openings) {
       if (o.kind === 'porte' || o.kind === 'porte-fenetre') {
         if (o.height < 2.0 - EPS) {
@@ -293,7 +297,7 @@ const openingRules: Rule = (plan, push) => {
         const span = openingLine(r, o);
         return overlapLength(span.from, span.to, nb.from, nb.to) > EPS;
       });
-      if (plan.upperFloor && o.kind !== 'porte' && o.sill < 1.0 - EPS && !facesRoom) {
+      if (isUpper(plan, r) && isGlazed(o) && o.sill < 1.0 - EPS && !facesRoom) {
         push({
           ruleId: 'garde-corps',
           severity: 'warning',
@@ -313,7 +317,7 @@ const openingRules: Rule = (plan, push) => {
     if (l.otherId) served.add(l.otherId);
   }
   for (const r of plan.rooms) {
-    if (r.type === 'escalier') continue;
+    if (r.type === 'escalier' || r.type === 'tremie') continue;
     if (!served.has(r.id)) {
       push({
         ruleId: 'acces-piece',
@@ -323,15 +327,6 @@ const openingRules: Rule = (plan, push) => {
         roomId: r.id,
       });
     }
-  }
-  const entrances = links.filter((l) => l.opening.entrance);
-  if (plan.rooms.length > 0 && entrances.length === 0) {
-    push({
-      ruleId: 'porte-entree',
-      severity: 'warning',
-      message: 'Aucune porte d’entrée définie (cocher « porte d’entrée » sur la porte palière).',
-      source: 'USAGE',
-    });
   }
 
   // WC communiquant directement avec la cuisine ou la pièce des repas.
@@ -388,6 +383,71 @@ const stairRules: Rule = (plan, push) => {
   }
 };
 
+const entranceRule: Rule = (plan, push) => {
+  if (plan.rooms.length > 0 && !plan.rooms.some((r) => r.openings.some((o) => o.entrance))) {
+    push({
+      ruleId: 'porte-entree',
+      severity: 'warning',
+      message: 'Aucune porte d’entrée définie (cocher « porte d’entrée » sur la porte palière).',
+      source: 'USAGE',
+    });
+  }
+};
+
+/** Liaisons verticales : chaque étage desservi, trémies dégagées, ascenseur. */
+const verticalRules: Rule = (plan, push) => {
+  const stairs = plan.rooms.filter((r) => r.type === 'escalier');
+  const levelName = (l: number) => plan.levels[l] ?? `Niveau ${l}`;
+  const occupied = new Set(plan.rooms.map(levelOf));
+  for (const l of occupied) {
+    if (l > 0 && !stairs.some((s) => levelOf(s) === l - 1)) {
+      push({
+        ruleId: 'niveau-inaccessible',
+        severity: 'error',
+        message: `${levelName(l)} : aucun escalier ne monte depuis ${levelName(l - 1)}.`,
+        source: 'MODELE',
+      });
+    }
+  }
+  for (const s of stairs) {
+    const l = levelOf(s);
+    if (l >= plan.levels.length - 1) {
+      push({
+        ruleId: 'escalier-sans-arrivee',
+        severity: 'warning',
+        message: `${s.name} (${levelName(l)}) : aucun niveau supérieur où arriver.`,
+        source: 'MODELE',
+        roomId: s.id,
+      });
+      continue;
+    }
+    for (const r of plan.rooms) {
+      if (levelOf(r) !== l + 1 || r.type === 'escalier' || r.type === 'tremie') continue;
+      if (
+        overlapLength(s.x, s.x + s.w, r.x, r.x + r.w) > EPS &&
+        overlapLength(s.y, s.y + s.d, r.y, r.y + r.d) > EPS
+      ) {
+        push({
+          ruleId: 'tremie',
+          severity: 'error',
+          message: `${s.name} (${levelName(l)}) débouche sous « ${r.name} » (${levelName(l + 1)}) : laisser une trémie au-dessus de l’escalier.`,
+          source: 'MODELE',
+          roomId: r.id,
+        });
+      }
+    }
+  }
+  const unitLevels = new Set(plan.rooms.filter((r) => r.unit?.trim()).map(levelOf));
+  if (plan.accessible && unitLevels.size > 0 && Math.max(...unitLevels) >= 3) {
+    push({
+      ruleId: 'ascenseur',
+      severity: 'warning',
+      message: 'Logements au R+3 ou plus : un ascenseur est exigé en construction neuve (non modélisé).',
+      source: 'ELAN',
+    });
+  }
+};
+
 const accessibilityRules: Rule = (plan, push) => {
   if (!plan.accessible) return;
   const turning = 1.5;
@@ -411,22 +471,51 @@ const accessibilityRules: Rule = (plan, push) => {
   check('chambre', 'chambre', 3.2);
 };
 
-const RULES: Rule[] = [
-  ceilingRule,
-  geometryRules,
-  roomSizeRules,
-  decenceRules,
-  programmeRules,
-  openingRules,
-  stairRules,
-  accessibilityRules,
-];
+/** Règles portant sur le bâtiment entier. */
+const BUILDING_RULES: Rule[] = [ceilingRule, geometryRules, roomSizeRules, openingRules, stairRules, verticalRules];
+/** Règles appliquées à chaque logement séparément. */
+const UNIT_RULES: Rule[] = [decenceRules, programmeRules, entranceRule, accessibilityRules];
+
+export interface Unit {
+  name: string;
+  rooms: Room[];
+}
+
+/**
+ * Logements du plan. Sans logement nommé, tout le plan forme un seul logement
+ * (maison, appartement). Sinon les pièces sans logement sont des parties communes.
+ */
+export function unitsOf(plan: Plan): Unit[] {
+  const named = plan.rooms.some((r) => r.unit?.trim());
+  if (!named) return plan.rooms.length ? [{ name: '', rooms: plan.rooms }] : [];
+  const map = new Map<string, Room[]>();
+  for (const r of plan.rooms) {
+    const name = r.unit?.trim();
+    if (!name) continue;
+    map.set(name, [...(map.get(name) ?? []), r]);
+  }
+  return [...map.entries()]
+    .map(([name, rooms]) => ({ name, rooms, level: Math.min(...rooms.map(levelOf)) }))
+    .sort((a, b) => a.level - b.level || a.name.localeCompare(b.name, 'fr', { numeric: true }))
+    .map(({ name, rooms }) => ({ name, rooms }));
+}
 
 const ORDER: Record<Severity, number> = { error: 0, warning: 1, info: 2 };
 
 export function checkPlan(plan: Plan): Issue[] {
   const issues: Issue[] = [];
-  for (const rule of RULES) rule(plan, (i) => issues.push(i));
+  const byId = new Map(plan.rooms.map((r) => [r.id, r]));
+  const multi = plan.levels.length > 1 || plan.rooms.some((r) => r.unit?.trim());
+  const scopeOf = (r: Room | undefined) =>
+    r && multi ? r.unit?.trim() || `${plan.levels[levelOf(r)] ?? ''} · parties communes` : undefined;
+  for (const rule of BUILDING_RULES) {
+    rule(plan, (i) => issues.push({ ...i, scope: scopeOf(i.roomId ? byId.get(i.roomId) : undefined) }));
+  }
+  for (const unit of unitsOf(plan)) {
+    const sub = { ...plan, rooms: unit.rooms };
+    const scope = unit.name || undefined;
+    for (const rule of UNIT_RULES) rule(sub, (i) => issues.push({ ...i, scope }));
+  }
   return issues.sort((a, b) => ORDER[a.severity] - ORDER[b.severity]);
 }
 
