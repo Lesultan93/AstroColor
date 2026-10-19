@@ -23,6 +23,7 @@ npm run build      # typecheck + build de production dans dist/
 - **Vue 3D** (Three.js) : niveaux empilés avec dalles ; affichage jusqu'au niveau actif ou de tout le bâtiment ; murs découpés aux baies (allèges, linteaux), vitrages, marches d'escalier, étiquettes. Option de coupe à 1,10 m.
 - **Inspecteur** : saisie des cotes au clavier (virgule acceptée), ouvertures (type, mur, décalage, largeur, hauteur, allège, porte d'entrée), paramètres du projet (HSP, plancher, cloisons, façade, occupants, PMR, étage).
 - **Contrôle des règles** en temps réel, classé par gravité, avec la source et ses réserves. Cliquer sur un défaut sélectionne la pièce.
+- **Plans PDF** : dossier A3 paysage, une planche par niveau, à l'échelle normalisée la plus grande qui tient (1/50, sinon 1/100 ou 1/200), identique sur toutes les planches pour qu'elles se superposent. Chaque planche comporte les murs coupés en poché, les portes avec débattement, les fenêtres, l'escalier avec sa ligne de foulée, les trémies, la désignation et la surface de chaque pièce, des chaînes de cotes partielles et totales, une échelle graphique, le tableau des surfaces par logement et un cartouche (projet, niveau, échelle, date, indice, mentions de réserve). Exemple : [`docs/immeuble-r2-plans.pdf`](docs/immeuble-r2-plans.pdf).
 - Annuler/rétablir (Ctrl+Z / Ctrl+Maj+Z), déplacement aux flèches (Maj = 50 cm), Suppr, sauvegarde locale automatique, import/export JSON.
 
 Le référentiel complet (seuils, sources, points à vérifier) est dans [`docs/REGLES.md`](docs/REGLES.md).

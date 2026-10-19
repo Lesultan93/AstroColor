@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { PlanEditor } from './editor/PlanEditor';
+import { downloadPlansPdf } from './export/pdf';
 import { levelOf } from './model/geometry';
 import { EXAMPLES, copyToLevel, emptyPlan, makeRoom } from './model/sample';
 import { usePlan } from './model/store';
@@ -173,7 +174,14 @@ export default function App() {
             ))}
           </select>
           <button onClick={() => fileInput.current?.click()}>Importer</button>
-          <button onClick={exportJson}>Exporter</button>
+          <button onClick={exportJson} title="Sauvegarder le projet (.json)">Exporter</button>
+          <button
+            onClick={() => void downloadPlansPdf(plan)}
+            disabled={plan.rooms.length === 0}
+            title="Plans cotés A3, une planche par niveau"
+          >
+            Plans PDF
+          </button>
           <input
             ref={fileInput}
             type="file"
