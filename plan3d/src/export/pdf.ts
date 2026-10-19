@@ -342,7 +342,8 @@ export async function buildPlansPdf(plan: Plan): Promise<jsPDF> {
   return doc;
 }
 
-export async function downloadPlansPdf(plan: Plan) {
+/** Fichier PDF prêt à enregistrer. */
+export async function plansPdfBlob(plan: Plan): Promise<Blob> {
   const doc = await buildPlansPdf(plan);
-  doc.save(`${plan.name.replace(/[^\p{L}\p{N}]+/gu, '-').toLowerCase() || 'plan'}-plans.pdf`);
+  return doc.output('blob');
 }

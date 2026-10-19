@@ -16,7 +16,8 @@
 }
 
 * { box-sizing: border-box; }
-body { margin: 0; }
+html, body, #root { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text); color-scheme: light; }
 h2 { font-size: 14px; margin: 0; }
 h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 16px 0 8px; }
 
@@ -32,6 +33,21 @@ button {
 button:hover:not(:disabled) { border-color: var(--accent); }
 button:disabled { opacity: 0.45; cursor: default; }
 button.danger { color: var(--error); }
+button.danger.armed { background: var(--error); color: #fff; border-color: var(--error); }
+.notice {
+  position: fixed;
+  left: 50%;
+  bottom: calc(40px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  background: #1d2330;
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  z-index: 20;
+  max-width: calc(100vw - 32px);
+}
+.notice.error { background: var(--error); }
 button.link { border: none; background: none; color: var(--accent); padding: 0; }
 
 .app {
@@ -39,7 +55,7 @@ button.link { border: none; background: none; color: var(--accent); padding: 0; 
   grid-template-columns: 180px 1fr 360px;
   grid-template-rows: auto 1fr auto;
   grid-template-areas: 'toolbar toolbar toolbar' 'palette stage sidebar' 'footer footer footer';
-  height: 100vh;
+  height: 100%;
 }
 
 .toolbar {

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { PlanEditor } from './editor/PlanEditor';
-import { downloadPlansPdf } from './export/pdf';
+import { plansPdfBlob } from './export/pdf';
+import { saveFile, slug } from './platform';
 import { levelOf } from './model/geometry';
 import { EXAMPLES, copyToLevel, emptyPlan, makeRoom } from './model/sample';
 import { usePlan } from './model/store';
@@ -21,6 +22,19 @@ export default function App() {
   const [labels, setLabels] = useState(true);
   const [level, setLevel] = useState(0);
   const [showAbove, setShowAbove] = useState(false);
+  const [notice, setNotice] = useState<{ text: string; error?: boolean } | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  const notify = (text: string, error = false) => {
+    setNotice({ text, error });
+    window.setTimeout(() => setNotice((n) => (n?.text === text ? null : n)), 5000);
+  };
+
+  const save = async (filename: string, data: Blob | string, what: string) => {
+    const outcome = await saveFile(filename, data);
+    if (outcome === 'saved') notify(`${what} enregistré : ${filename}`);
+    else if (outcome === 'failed') notify(`${what} : l’enregistrement a échoué. Réessayez.`, true);
+  };
   const activeLevel = Math.min(level, plan.levels.length - 1);
   const fileInput = useRef<HTMLInputElement>(null);
 
@@ -86,7 +100,13 @@ export default function App() {
   const removeLevel = () => {
     if (plan.levels.length < 2) return;
     const count = plan.rooms.filter((r) => levelOf(r) === activeLevel).length;
-    if (count > 0 && !confirm(`Supprimer ${plan.levels[activeLevel]} et ses ${count} pièce(s) ?`)) return;
+    // Deux clics : le premier arme la suppression, le second la confirme.
+    if (count > 0 && !confirmDelete) {
+      setConfirmDelete(true);
+      window.setTimeout(() => setConfirmDelete(false), 4000);
+      return;
+    }
+    setConfirmDelete(false);
     update((p) => ({
       ...p,
       levels: p.levels.filter((_, i) => i !== activeLevel),
@@ -98,14 +118,14 @@ export default function App() {
     setSelectedId(null);
   };
 
-  const exportJson = () => {
-    const blob = new Blob([JSON.stringify(plan, null, 2)], { type: 'application/json' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `${plan.name.replace(/[^\p{L}\p{N}]+/gu, '-').toLowerCase() || 'plan'}.plan3d.json`;
-    a.click();
-    URL.revokeObjectURL(a.href);
+  const exportJson = () =>
+    void save(`${slug(plan.name)}.plan3d.json`, JSON.stringify(plan, null, 2), 'Projet');
+
+  const exportPdf = async () => {
+    notify('Génération des plans PDF…');
+    void save(`${slug(plan.name)}-plans.pdf`, await plansPdfBlob(plan), 'Plans PDF');
   };
+
 
   const importJson = async (file: File) => {
     try {
@@ -113,7 +133,7 @@ export default function App() {
       if (!Array.isArray(data.rooms)) throw new Error('format');
       load({ ...emptyPlan(), ...data, levels: data.levels?.length ? data.levels : ['RDC'] });
     } catch {
-      alert('Fichier invalide : un export Plan3D (.json) est attendu.');
+      notify('Fichier invalide : un export Plan3D (.json) est attendu.', true);
     }
   };
 
@@ -176,7 +196,7 @@ export default function App() {
           <button onClick={() => fileInput.current?.click()}>Importer</button>
           <button onClick={exportJson} title="Sauvegarder le projet (.json)">Exporter</button>
           <button
-            onClick={() => void downloadPlansPdf(plan)}
+            onClick={() => void exportPdf()}
             disabled={plan.rooms.length === 0}
             title="Plans cotés A3, une planche par niveau"
           >
@@ -244,8 +264,13 @@ export default function App() {
         <div className="row">
           <button onClick={() => addLevel(false)} title="Ajouter un niveau vide au-dessus">+ Niveau</button>
           <button onClick={() => addLevel(true)} title="Copier le niveau actif au-dessus">Dupliquer</button>
-          <button className="danger" onClick={removeLevel} disabled={plan.levels.length < 2} title="Supprimer le niveau actif">
-            ✕
+          <button
+            className={`danger ${confirmDelete ? 'armed' : ''}`}
+            onClick={removeLevel}
+            disabled={plan.levels.length < 2}
+            title="Supprimer le niveau actif"
+          >
+            {confirmDelete ? `Supprimer ${plan.levels[activeLevel]} ?` : '✕'}
           </button>
         </div>
         <h2>Ajouter</h2>
@@ -290,6 +315,12 @@ export default function App() {
         <Inspector plan={plan} room={selected} update={update} onDelete={deleteRoom} />
         <IssuesPanel issues={issues} onSelect={select} />
       </aside>
+
+      {notice && (
+        <div className={`notice ${notice.error ? 'error' : ''}`} role="status">
+          {notice.text}
+        </div>
+      )}
 
       <footer className="disclaimer">
         Référentiel : textes français et ergonomie Neufert, utilisés comme référence de pratique. Outil d’aide à la
