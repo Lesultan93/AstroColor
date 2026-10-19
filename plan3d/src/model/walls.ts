@@ -33,13 +33,19 @@ export function wallPieces(plan: Plan, room: Room): WallPiece[] {
 
   for (const side of SIDES) {
     const edge = edgeLine(room, side);
-    const intervals: { a: number; b: number; t: number }[] = [
+    const intervals: { a: number; b: number; t: number; low?: boolean }[] = [
       ...neighbors(plan, room, side).map((n) => ({ a: n.from, b: n.to, t: half })),
-      ...exteriorIntervals(plan, room, side).map(([a, b]) => ({ a, b, t: ext })),
+      ...exteriorIntervals(plan, room, side).map(([a, b]) => ({ a, b, t: ext, low: room.type === 'terrasse' })),
     ];
     const openings = openingsOnSide(plan, room, side);
 
-    for (const { a: a0, b: b0, t } of intervals) {
+    for (const { a: a0, b: b0, t, low } of intervals) {
+      if (low) {
+        // Rive de terrasse : muret / garde-corps à 1,00 m, sans baie.
+        pieces.push({ side, axis: edge.axis, c: edge.c, outward: OUTWARD[side], thickness: t,
+          from: a0, to: b0, bottom: 0, top: Math.min(H, 1), kind: 'plein' });
+        continue;
+      }
       // Prolonge aux angles de la pièce pour fermer les coins.
       const a = Math.abs(a0 - edge.from) < EPS ? a0 - t : a0;
       const b = Math.abs(b0 - edge.to) < EPS ? b0 + t : b0;

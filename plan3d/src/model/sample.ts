@@ -106,3 +106,77 @@ export function sampleT3(): Plan {
   ];
   return { ...emptyPlan(), name: 'Appartement T3 — exemple', occupants: 4, rooms };
 }
+
+/**
+ * Immeuble R+2 du client — logement gauche (le logement droit est symétrique).
+ * Proposition : la pièce principale en L (7 × 6 m moins la salle d'eau) est
+ * redécoupée en séjour 7 × 3 m, chambre 4 × 3 m et dégagement 3 × 1 m.
+ * Hypothèse : les cotes du croquis sont prises comme cotes intérieures.
+ */
+export function sampleImmeubleT2(level: 'RDC' | 'R+1'): Plan {
+  const rooms: Room[] = [
+    makeRoom('terrasse', 0, 0, {
+      name: 'Terrasse',
+      w: 4,
+      d: 2,
+      openings: [makeOpening('porte', 'E', 0.2, { width: 0.8 })],
+    }),
+    makeRoom('cuisine', 4.07, 0, {
+      name: 'Cuisine',
+      w: 3,
+      d: 2,
+      openings: [
+        makeOpening('fenetre', 'N', 1.0, { width: 1.0, height: 1.15, sill: 1.05 }),
+        makeOpening('porte', 'S', 2.0, { width: 0.83 }),
+      ],
+    }),
+    makeRoom('sejour', 0, 2.07, {
+      name: 'Séjour',
+      w: 7.07,
+      d: 3,
+      openings: [
+        makeOpening('porte-fenetre', 'N', 1.3, { width: 1.4 }),
+        makeOpening('fenetre', 'W', 0.8, { width: 1.4 }),
+        makeOpening('porte', 'E', 0.9, { width: 0.93, entrance: true }),
+      ],
+    }),
+    makeRoom('chambre', 0, 5.14, {
+      name: 'Chambre',
+      w: 4,
+      d: 3,
+      openings: [
+        makeOpening('fenetre', 'S', 1.3, { width: 1.4 }),
+        makeOpening('porte', 'E', 0.1, { width: 0.83 }),
+      ],
+    }),
+    makeRoom('degagement', 4.07, 5.14, {
+      name: 'Dégagement',
+      w: 3,
+      d: 1,
+      openings: [makeOpening('porte', 'N', 0.5, { width: 0.93 })],
+    }),
+    makeRoom('sdb', 4.07, 6.21, {
+      name: 'Salle d’eau + WC',
+      w: 3,
+      d: 2,
+      wcIncluded: true,
+      openings: [
+        makeOpening('porte', 'N', 2.0, { width: 0.83 }),
+        makeOpening('fenetre', 'S', 1.2, { width: 0.6, height: 0.6, sill: 1.6 }),
+      ],
+    }),
+  ];
+  return {
+    ...emptyPlan(),
+    name: `Immeuble R+2 — ${level}, logement gauche (T2 proposé)`,
+    occupants: 3,
+    upperFloor: level !== 'RDC',
+    rooms,
+  };
+}
+
+export const EXAMPLES: { id: string; label: string; build: () => Plan }[] = [
+  { id: 't3', label: 'Appartement T3', build: sampleT3 },
+  { id: 'immeuble-rdc', label: 'Immeuble R+2 — RDC, T2 proposé', build: () => sampleImmeubleT2('RDC') },
+  { id: 'immeuble-r1', label: 'Immeuble R+2 — R+1, T2 proposé', build: () => sampleImmeubleT2('R+1') },
+];

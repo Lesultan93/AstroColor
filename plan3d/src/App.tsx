@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { PlanEditor } from './editor/PlanEditor';
-import { emptyPlan, makeRoom, sampleT3 } from './model/sample';
+import { EXAMPLES, emptyPlan, makeRoom } from './model/sample';
 import { usePlan } from './model/store';
 import type { Plan, RoomType } from './model/types';
 import { ROOM_TYPES, ROOM_TYPE_ORDER } from './rules/catalog';
@@ -105,7 +105,21 @@ export default function App() {
         </div>
         <div className="group">
           <button onClick={() => load(emptyPlan())}>Nouveau</button>
-          <button onClick={() => load(sampleT3())}>Exemple T3</button>
+          <select
+            className="examples"
+            value=""
+            onChange={(e) => {
+              const ex = EXAMPLES.find((x) => x.id === e.target.value);
+              if (ex) load(ex.build());
+            }}
+          >
+            <option value="">Exemples…</option>
+            {EXAMPLES.map((x) => (
+              <option key={x.id} value={x.id}>
+                {x.label}
+              </option>
+            ))}
+          </select>
           <button onClick={() => fileInput.current?.click()}>Importer</button>
           <button onClick={exportJson}>Exporter</button>
           <input

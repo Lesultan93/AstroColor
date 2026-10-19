@@ -55,6 +55,7 @@ button.link { border: none; background: none; color: var(--accent); padding: 0; 
 .brand { display: flex; flex-direction: column; margin-right: 8px; }
 .brand span { color: var(--muted); font-size: 12px; }
 .group { display: flex; gap: 6px; align-items: center; }
+.examples { font: inherit; border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; background: var(--panel); }
 .segmented button.active { background: var(--accent); color: white; border-color: var(--accent); }
 
 .palette {

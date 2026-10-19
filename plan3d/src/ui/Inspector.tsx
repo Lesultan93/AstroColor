@@ -70,6 +70,11 @@ export function Inspector({ plan, room, update, onDelete }: Props) {
         {spec.minWidth > 0 && <> · largeur mini {fmt(spec.minWidth)} m</>}
       </p>
 
+      {room.type === 'sdb' && (
+        <CheckField label="WC intégré à la salle d’eau" value={!!room.wcIncluded}
+          onChange={(wcIncluded) => setRoom({ wcIncluded })} />
+      )}
+
       {stair && (
         <section>
           <h3>Escalier droit</h3>

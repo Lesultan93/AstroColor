@@ -2,6 +2,7 @@ import {
   EPS,
   area,
   doorLinks,
+  neighbors,
   openingLine,
   overlapLength,
   roomsOverlap,
@@ -192,7 +193,7 @@ const decenceRules: Rule = (plan, push) => {
         source: 'DECENCE',
       });
     }
-    if (!has('wc')) {
+    if (!has('wc') && !plan.rooms.some((r) => r.type === 'sdb' && r.wcIncluded)) {
       push({
         ruleId: 'equipement-wc',
         severity: 'error',
@@ -206,6 +207,17 @@ const decenceRules: Rule = (plan, push) => {
         severity: 'error',
         message: 'Aucune salle d’eau : un équipement pour la toilette corporelle est requis.',
         source: 'DECENCE',
+      });
+    }
+  }
+  if (plan.upperFloor) {
+    for (const r of plan.rooms.filter((x) => x.type === 'terrasse')) {
+      push({
+        ruleId: 'garde-corps-terrasse',
+        severity: 'warning',
+        message: `${r.name} en étage : garde-corps de 1,00 m de hauteur de protection sur les rives.`,
+        source: 'GARDE_CORPS',
+        roomId: r.id,
       });
     }
   }
@@ -276,7 +288,12 @@ const openingRules: Rule = (plan, push) => {
           });
         }
       }
-      if (plan.upperFloor && o.kind !== 'porte' && o.sill < 1.0 - EPS) {
+      // Une baie donnant sur une pièce voisine (ex. terrasse) n'expose pas au vide.
+      const facesRoom = neighbors(plan, r, o.side).some((nb) => {
+        const span = openingLine(r, o);
+        return overlapLength(span.from, span.to, nb.from, nb.to) > EPS;
+      });
+      if (plan.upperFloor && o.kind !== 'porte' && o.sill < 1.0 - EPS && !facesRoom) {
         push({
           ruleId: 'garde-corps',
           severity: 'warning',
@@ -389,7 +406,7 @@ const accessibilityRules: Rule = (plan, push) => {
     }
   };
   check('sdb', 'salle d’eau', turning);
-  check('wc', 'WC', turning);
+  if (!plan.rooms.some((r) => r.type === 'sdb' && r.wcIncluded)) check('wc', 'WC', turning);
   // Chambre : lit 1,40 m + passage 0,90 m de part et d'autre ≈ 3,20 m.
   check('chambre', 'chambre', 3.2);
 };

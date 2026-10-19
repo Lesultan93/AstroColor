@@ -187,6 +187,17 @@ export const ROOM_TYPES: Record<RoomType, RoomTypeSpec> = {
     rationale: 'Largeur d’emmarchement 0,80 m (usage, maison individuelle)',
     defaultSize: [4.2, 0.9],
   },
+  terrasse: {
+    label: 'Terrasse / balcon',
+    color: '#b7d7a8',
+    principal: false,
+    habitable: false,
+    minArea: 0,
+    recommendedArea: 0,
+    minWidth: 0,
+    rationale: '',
+    defaultSize: [3, 2],
+  },
 };
 
 export const ROOM_TYPE_ORDER = Object.keys(ROOM_TYPES) as RoomType[];

@@ -12,7 +12,8 @@ export type RoomType =
   | 'degagement'
   | 'bureau'
   | 'cellier'
-  | 'escalier';
+  | 'escalier'
+  | 'terrasse';
 
 /** Côté d'une pièce : N = haut (y min), S = bas, W = gauche (x min), E = droite. */
 export type Side = 'N' | 'S' | 'E' | 'W';
@@ -43,6 +44,8 @@ export interface Room {
   w: number;
   d: number;
   openings: Opening[];
+  /** Salle d'eau intégrant le WC. */
+  wcIncluded?: boolean;
   /** Escalier droit uniquement : nombre de hauteurs de marche. */
   steps?: number;
 }

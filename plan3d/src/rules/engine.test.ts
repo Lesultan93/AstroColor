@@ -103,3 +103,21 @@ describe('escalier', () => {
     expect(ids(plan)).toContain('escalier-blondel');
   });
 });
+
+describe('immeuble R+2 du client (T2 proposé)', () => {
+  it('ne présente aucune non-conformité au RDC', async () => {
+    const { sampleImmeubleT2 } = await import('../model/sample');
+    const errors = checkPlan(sampleImmeubleT2('RDC')).filter((i) => i.severity === 'error');
+    expect(errors).toEqual([]);
+  });
+
+  it('accepte le WC intégré à la salle d’eau', async () => {
+    const { sampleImmeubleT2 } = await import('../model/sample');
+    expect(ids(sampleImmeubleT2('RDC'))).not.toContain('equipement-wc');
+  });
+
+  it('exige un garde-corps de terrasse en étage', async () => {
+    const { sampleImmeubleT2 } = await import('../model/sample');
+    expect(ids(sampleImmeubleT2('R+1'))).toContain('garde-corps-terrasse');
+  });
+});
