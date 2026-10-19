@@ -41,3 +41,9 @@ npm start
 Within the app you can generate color palettes, export them to CSS, JSON,
 SCSS, SVG, PNG or PDF formats and consult the history of your last
 palettes.
+
+## Plan3D
+
+The `plan3d/` folder contains a separate 2D/3D housing floor-plan modeller with a
+real-world dimension rules checker (French regulations + Neufert). See
+[`plan3d/README.md`](plan3d/README.md).
